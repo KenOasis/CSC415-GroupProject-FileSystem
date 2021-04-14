@@ -20,13 +20,34 @@ freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
 	return vector;
 }
 
-int findFreeBlock(int space, freeSpace* vector) {
+int findFreeBlock(freeSpace* vector) {
 	int freeIndex = vector->nextFreeIndex + vector->nextFreePosition * 32; //the bit number that is free, aka the next free block
 	vector->bitVector[vector->nextFreePosition] |= 1 << vector->nextFreeIndex; //sets bit to 1 for future reference
 	vector->nextFreeIndex += 1;
 	if (vector->nextFreeIndex >= 32) { //if nextFreeIndex >= 32, then move to next int in the bit vector
 		vector->nextFreePosition += 1;
 		vector->nextFreeIndex = 0;
+	}
+	if (vector->nextFreePosition == vector->size) { //freeSpace is full
+		return -1;
+	}
+	return freeIndex;
+}
+
+int findMultipleBlocks(int blockCount, freeSpace* vector) {
+	int count = blockCount; //tracks how many remaining blocks to reserve/handle
+	int freeIndex = vector->nextFreeIndex + vector->nextFreePosition * 32; //the bit index that is free, followed by more free space
+	while (count > 0) { //counts down and manipulates the bits that are free that will be used, returns -1 if not enough bits/blocks left
+		vector->bitVector[vector->nextFreePosition] |= 1 << vector->nextFreeIndex; //set bit to 1 for future reference
+		vector->nextFreeIndex += 1;
+		if (vector->nextFreeIndex >= 32) { //if nextFreeIndex >= 32, then move to next int in the bit vector
+                	vector->nextFreePosition += 1;
+                	vector->nextFreeIndex = 0;
+        	}
+		if (vector->nextFreePosition == vector->size) { //free space is full
+			return -1;
+		}
+		count--;
 	}
 	return freeIndex;
 }

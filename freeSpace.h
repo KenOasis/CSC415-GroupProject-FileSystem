@@ -11,6 +11,7 @@ typedef struct  {
 } freeSpace;
 
 freeSpace* init_freeSpace(int totalBlocks, int bytesPerBlock);
-int findFreeBlock(int space, freeSpace* vector);
+int findFreeBlock(freeSpace* vector);
+int findMultipleBlocks(int blockCount, freeSpace* vector);
 
 #endif
