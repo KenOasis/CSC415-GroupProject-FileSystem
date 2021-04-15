@@ -51,7 +51,3 @@ int findMultipleBlocks(int blockCount, freeSpace* vector) {
 	}
 	return freeIndex;
 }
-
-int main(int argc, const char * argv[]) {
-	return 0;
-}

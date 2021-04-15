@@ -20,7 +20,7 @@
 
 #include "b_io.h"
 #include "freeSpace.h"
-#include "fslow.h"
+#include "fsLow.h"
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR
@@ -52,16 +52,6 @@ typedef struct
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
 	} fdDir;
 
-typedef struct{
-	char dirEntryName[256];
-	unsigned short dirEntryLocation; /* Current directory entry position */
-	unsigned short dirParentLocation; /* Parent directory entry position */
-	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
-	unsigned char entryType; /* file or directory*/
-	uint64_t directoryStartLocation; /*Starting LBA of directory */
-	fs_stat metaData; // file attributes
-}fs_directory_entry;
-
 int fs_init(freeSpace* vec, char *volName);
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
@@ -78,7 +68,7 @@ int fs_delete(char* filename);	//removes a file
 
 
 
-struct fs_stat
+struct fs_stats
 	{
 	off_t     st_size;    		/* total size, in bytes */
 	blksize_t st_blksize; 		/* blocksize for file system I/O */
@@ -88,9 +78,19 @@ struct fs_stat
 	time_t    st_createtime;   	/* time of last status change */
 	
 	/* add additional attributes here for your file system */
-	};
+	} fs_stats;
 
-int fs_stat(const char *path, struct fs_stat *buf);
+typedef struct{
+        char dirEntryName[256];
+        unsigned short dirEntryLocation; /* Current directory entry position */
+        unsigned short dirParentLocation; /* Parent directory entry position */
+        unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
+        unsigned char entryType; /* file or directory*/
+        uint64_t directoryStartLocation; /*Starting LBA of directory */
+        struct fs_stats metaData; // file attributes
+}fs_directory_entry;
+
+int fs_stat(const char *path, struct fs_stats *buf);
 
 #endif
 
