@@ -19,12 +19,15 @@
 #include <time.h>
 
 #include "b_io.h"
-
+#include "freeSpace.h"
+#include "fslow.h"
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR
 #define FT_LINK	DT_LNK
-
+#define MIN_DE_NUM 16
+#define MIN_CHILD_NUM 16
+#define UNKNOWN_LOCATION UINT_MAX
 #ifndef uint64_t
 typedef u_int64_t uint64_t;
 #endif
@@ -50,16 +53,17 @@ typedef struct
 	} fdDir;
 
 typedef struct{
+	char dirEntryName[256];
 	unsigned short dirEntryLocation; /* Current directory entry position */
 	unsigned short dirParentLocation; /* Parent directory entry position */
-	unsigned short childrenLocation[32]; /* Location Of Children Entry, if entryType is file then it is all -1*/
+	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
 	unsigned char entryType; /* file or directory*/
-	unit64_t fileStartLocation; /* Starting LBA of file (if EntryType is file*/
-	unit64_t direcotryStartLocation; /*Starting LBA of directory */
-	fs_stat metaData;
+	uint64_t fileStartLocation; /* Starting LBA of file (if EntryType is file*/
+	uint64_t direcotryStartLocation; /*Starting LBA of directory */
+	fs_stat metaData; // file attributes
 }fs_directory_entry;
 
-int fs_init();
+int fs_init(freeSpace* vec, char *volName);
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
 fdDir * fs_opendir(const char *name);
@@ -90,4 +94,3 @@ struct fs_stat
 int fs_stat(const char *path, struct fs_stat *buf);
 
 #endif
-
