@@ -20,7 +20,6 @@ int fs_init(freeSpace* vec,char *volName){
             (*(directories + i) -> childrenLocation)[j] = UNKNOWN_LOCATION;
         }
         *(directories + i) -> entryType = FT_DIRECTORY;
-        *(directories + i) -> fileStartLocation = UNKNOWN_LOCATION;
         *(directories + i) -> directoryStartLocation = directoryStartLocation;
         (*(directories + i) -> metaData) -> st_size = blockCount * MINBLOCKSIZE;
         (*(directories + i) -> metaData) -> st_blksize = MINBLOCKSIZE;

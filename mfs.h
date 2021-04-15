@@ -58,7 +58,6 @@ typedef struct{
 	unsigned short dirParentLocation; /* Parent directory entry position */
 	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
 	unsigned char entryType; /* file or directory*/
-	uint64_t fileStartLocation; /* Starting LBA of file (if EntryType is file*/
 	uint64_t directoryStartLocation; /*Starting LBA of directory */
 	fs_stat metaData; // file attributes
 }fs_directory_entry;
