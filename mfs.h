@@ -49,7 +49,17 @@ typedef struct
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
 	} fdDir;
 
+typedef struct{
+	unsigned short dirEntryLocation; /* Current directory entry position */
+	unsigned short dirParentLocation; /* Parent directory entry position */
+	unsigned short childrenLocation[32]; /* Location Of Children Entry, if entryType is file then it is all -1*/
+	unsigned char entryType; /* file or directory*/
+	unit64_t fileStartLocation; /* Starting LBA of file (if EntryType is file*/
+	unit64_t direcotryStartLocation; /*Starting LBA of directory */
+	fs_stat metaData;
+}fs_directory_entry;
 
+int fs_init();
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
 fdDir * fs_opendir(const char *name);
@@ -61,6 +71,7 @@ int fs_setcwd(char *buf);   //linux chdir
 int fs_isFile(char * path);	//return 1 if file, 0 otherwise
 int fs_isDir(char * path);		//return 1 if directory, 0 otherwise
 int fs_delete(char* filename);	//removes a file
+
 
 
 
