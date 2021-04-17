@@ -27,7 +27,7 @@
 #define FT_LINK	DT_LNK
 #define MIN_DE_NUM 16
 #define MIN_CHILD_NUM 16
-#define UNKNOWN_LOCATION UINT_MAX
+#define UNKNOWN_LOCATION USHRT_MAX
 #ifndef uint64_t
 typedef u_int64_t uint64_t;
 #endif
@@ -52,6 +52,18 @@ typedef struct
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
 	} fdDir;
 
+
+typedef struct{
+	off_t     fm_size;    		/* total size, in bytes */
+	blksize_t fm_blksize; 		/* blocksize for file system I/O */
+	blkcnt_t  fm_blocks;  		/* number of 512B blocks allocated */
+	time_t    fm_accesstime;   	/* time of last access */
+	time_t    fm_modtime;   	/* time of last modification */
+	time_t    fm_createtime;   	/* time of last status change */
+    int       fm_accessmode;      /* access mode in hex*/
+}fs_metadata;
+
+
 typedef struct{
 	char dirEntryName[256];
 	unsigned short dirEntryLocation; /* Current directory entry position */
@@ -59,7 +71,7 @@ typedef struct{
 	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
 	unsigned char entryType; /* file or directory*/
 	uint64_t directoryStartLocation; /*Starting LBA of directory */
-	fs_stat metaData; // file attributes
+	fs_metadata metaData; // file attributes
 }fs_directory_entry;
 
 int fs_init(freeSpace* vec, char *volName);
@@ -70,13 +82,10 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp);
 int fs_closedir(fdDir *dirp);
 
 char * fs_getcwd(char *buf, size_t size);
-int fs_setcwd(char *buf);   //linux chdir
+int fs_setcwd(char *buf);   //linux chdirs
 int fs_isFile(char * path);	//return 1 if file, 0 otherwise
 int fs_isDir(char * path);		//return 1 if directory, 0 otherwise
 int fs_delete(char* filename);	//removes a file
-
-
-
 
 struct fs_stat
 	{

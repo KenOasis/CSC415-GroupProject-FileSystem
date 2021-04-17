@@ -2,31 +2,33 @@
 #include "freeSpace.h"
 #include "fsLow.h"
 #include "mfs.h"
+#include "limits.h"
 int fs_init(freeSpace* vec,char *volName){
-    int blockCount = (MIN_DE_NUM * sizeof(fs_directory_entry) + MINBLOCKSIZE) / MINBLOCKSIZE;
+ int blockCount = (MIN_DE_NUM * sizeof(fs_directory_entry) + MINBLOCKSIZE) / MINBLOCKSIZE;
     int actualNumOfDE = (blockCount * MINBLOCKSIZE) / sizeof(fs_directory_entry);
-    fs_directory_entry * directories =
+    fs_directory_entry *directories =
         malloc(actualNumOfDE * sizeof(fs_directory_entry));
     uint64_t directoryStartLocation = findMultipleBlocks(blockCount,vec);
     for(unsigned int i = 0; i < actualNumOfDE; ++i){
         if(i == 0){
-            strcpy(*(directories + i) -> dirEntryName, "root");
-        }eles{
-            strcpy(*(directories + i) -> dirEntryName, "");
+            strcpy((directories + i) -> dirEntryName, "root");
+        }else{
+            strcpy((directories + i) -> dirEntryName, "");
         }
-        *(directories + i) -> dirEntryLocation = i;
-        *(directories + i) -> dirParentLocation = i;
-        for(int j = 0; i < MIN_CHILD_NUM; ++i){
-            (*(directories + i) -> childrenLocation)[j] = UNKNOWN_LOCATION;
+        (directories + i) -> dirEntryLocation = i;
+        (directories + i) -> dirParentLocation = i;
+        for(int j = 0; j < MIN_CHILD_NUM; ++j){
+            ((directories + i) -> childrenLocation)[j] = UNKNOWN_LOCATION;
         }
-        *(directories + i) -> entryType = FT_DIRECTORY;
-        *(directories + i) -> directoryStartLocation = directoryStartLocation;
-        (*(directories + i) -> metaData) -> st_size = blockCount * MINBLOCKSIZE;
-        (*(directories + i) -> metaData) -> st_blksize = MINBLOCKSIZE;
-        (*(directories + i) -> metaData) -> st_blocks = blockCount;
-        (*(directories + i) -> metaData) -> ss_accestime = time(NULL);
-        (*(directories + i) -> metaData) -> ss_modtime = time(NULL);
-        (*(directories + i) -> metaData) -> ss_createtime = time(NULL);
+        (directories + i) -> entryType = FT_DIRECTORY;
+        (directories + i) -> directoryStartLocation = directoryStartLocation;
+        ((directories + i) -> metaData).fm_size = blockCount * MINBLOCKSIZE;
+        ((directories + i) -> metaData).fm_blksize = MINBLOCKSIZE;
+        ((directories + i) -> metaData).fm_blocks = blockCount;
+        ((directories + i) -> metaData).fm_accesstime = time(NULL);
+        ((directories + i) -> metaData).fm_modtime = time(NULL);
+        ((directories + i) -> metaData).fm_createtime = time(NULL);
+        ((directories + i) -> metaData).fm_accessmode = 0x721;
         /*
         *  To-do: need to LBA Write
         */
