@@ -15,8 +15,6 @@ int fs_init(/* freeSpace* vec,char *volName */){
         }else{
             strcpy((directories + i) -> dirEntryName, "");
         }
-        strcpy((directories + i) -> ownerName, "staff");
-        strcpy((directories + i) -> groupOwnerName, "staff");
         (directories + i) -> dirEntryLocation = i;
         (directories + i) -> dirParentLocation = i;
         for(int j = 0; j < MIN_CHILD_NUM; ++j){
@@ -24,6 +22,8 @@ int fs_init(/* freeSpace* vec,char *volName */){
         }
         (directories + i) -> entryType = FT_DIRECTORY;
         (directories + i) -> directoryStartLocation = directoryStartLocation;
+        strcpy(((directories + i) -> metaData).fm_ownername, "staff");
+        strcpy(((directories + i) -> metaData).fm_groupownername, "staff");
         ((directories + i) -> metaData).fm_size = blockCount * MINBLOCKSIZE;
         ((directories + i) -> metaData).fm_blksize = MINBLOCKSIZE;
         ((directories + i) -> metaData).fm_blocks = blockCount;

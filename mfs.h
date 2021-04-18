@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
-
+#include <limits.h>
 #include "b_io.h"
 //#include "freeSpace.h"
 #include "fslow.h"
@@ -29,7 +29,7 @@
 #define FT_LINK	DT_LNK
 #define MIN_DE_NUM 16
 #define MIN_CHILD_NUM 16
-#define UNKNOWN_LOCATION UINT_MAX
+#define UNKNOWN_LOCATION USHRT_MAX
 #ifndef uint64_t
 typedef u_int64_t uint64_t;
 #endif
@@ -55,6 +55,8 @@ typedef struct
 	} fdDir;
 
 typedef struct{
+	char      fm_ownername;     /* ownername of the file */
+  char      fm_groupownername;/* group ownername of the file */
 	off_t     fm_size;    		/* total size, in bytes */
 	blksize_t fm_blksize; 		/* blocksize for file system I/O */
 	blkcnt_t  fm_blocks;  		/* number of 512B blocks allocated */
@@ -66,13 +68,10 @@ typedef struct{
 
 typedef struct{
 	char dirEntryName[256];
-	char ownerName[32];
-	char groupOwnerName[32];
 	unsigned short dirEntryLocation; /* Current directory entry position */
 	unsigned short dirParentLocation; /* Parent directory entry position */
 	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
 	unsigned char entryType; /* file or directory*/
-	uint64_t fileStartLocation; /* Starting LBA of file (if EntryType is file*/
 	uint64_t directoryStartLocation; /*Starting LBA of directory */
 	fs_metadata metaData; // file attributes
 }fs_directory_entry;
@@ -96,6 +95,8 @@ int fs_delete(char* filename);	//removes a file
 
 struct fs_stat
 	{
+	char      st_ownername;     /* ownername of the file */
+	char      st_groupownername;/* group ownername of the file */
 	off_t     st_size;    		/* total size, in bytes */
 	blksize_t st_blksize; 		/* blocksize for file system I/O */
 	blkcnt_t  st_blocks;  		/* number of 512B blocks allocated */
