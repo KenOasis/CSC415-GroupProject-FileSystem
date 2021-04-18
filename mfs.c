@@ -21,6 +21,7 @@ int fs_init(/* freeSpace* vec,char *volName */){
             ((directories + i) -> childrenLocation)[j] = UNKNOWN_LOCATION;
         }
         (directories + i) -> entryType = FT_DIRECTORY;
+        (directories + i) -> numberOfDirectories = actualNumOfDE;
         (directories + i) -> directoryStartLocation = directoryStartLocation;
         strcpy(((directories + i) -> metaData).fm_ownername, "staff");
         strcpy(((directories + i) -> metaData).fm_groupownername, "staff");
