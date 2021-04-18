@@ -19,7 +19,7 @@
 #include <time.h>
 
 #include "b_io.h"
-#include "freeSpace.h"
+//#include "freeSpace.h"
 #include "fslow.h"
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
@@ -53,17 +53,30 @@ typedef struct
 	} fdDir;
 
 typedef struct{
+	off_t     fm_size;    		/* total size, in bytes */
+	blksize_t fm_blksize; 		/* blocksize for file system I/O */
+	blkcnt_t  fm_blocks;  		/* number of 512B blocks allocated */
+	time_t    fm_accesstime;   	/* time of last access */
+	time_t    fm_modtime;   	/* time of last modification */
+	time_t    fm_createtime;   	/* time of last status change */
+  int       fm_accessmode;      /* access mode */
+}fs_metadata;
+
+typedef struct{
 	char dirEntryName[256];
+	char ownerName[32];
+	char groupOwnerName[32];
 	unsigned short dirEntryLocation; /* Current directory entry position */
 	unsigned short dirParentLocation; /* Parent directory entry position */
 	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
 	unsigned char entryType; /* file or directory*/
 	uint64_t fileStartLocation; /* Starting LBA of file (if EntryType is file*/
 	uint64_t directoryStartLocation; /*Starting LBA of directory */
-	fs_stat metaData; // file attributes
+	fs_metadata metaData; // file attributes
 }fs_directory_entry;
 
-int fs_init(freeSpace* vec, char *volName);
+
+int fs_init(); // not finished, need LBA write 
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
 fdDir * fs_opendir(const char *name);
@@ -93,4 +106,6 @@ struct fs_stat
 
 int fs_stat(const char *path, struct fs_stat *buf);
 
+void display_time(time_t t); // helper to display formatted time 
+void print_accessmode(int access_mode, int file_type); // helper to display accessmod as "drwxrwxrwx" form
 #endif
