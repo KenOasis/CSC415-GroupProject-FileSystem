@@ -55,8 +55,8 @@ typedef struct
 	} fdDir;
 
 typedef struct{
-	char      fm_ownername;     /* ownername of the file */
-  char      fm_groupownername;/* group ownername of the file */
+	char      fm_ownername[32];     /* ownername of the file */
+  char      fm_groupownername[32];/* group ownername of the file */
 	off_t     fm_size;    		/* total size, in bytes */
 	blksize_t fm_blksize; 		/* blocksize for file system I/O */
 	blkcnt_t  fm_blocks;  		/* number of 512B blocks allocated */
@@ -96,8 +96,8 @@ int fs_delete(char* filename);	//removes a file
 
 struct fs_stat
 	{
-	char      st_ownername;     /* ownername of the file */
-	char      st_groupownername;/* group ownername of the file */
+	char      st_ownername[32];     /* ownername of the file */
+	char      st_groupownername[32];/* group ownername of the file */
 	off_t     st_size;    		/* total size, in bytes */
 	blksize_t st_blksize; 		/* blocksize for file system I/O */
 	blkcnt_t  st_blocks;  		/* number of 512B blocks allocated */
