@@ -2,14 +2,14 @@
 //#include "freeSpace.h"
 #include "fsLow.h"
 #include "mfs.h"
+
+void __attribute__ ((constructor)) premain()
+{   // THIS IS JUST FOR TEST 
+       fs_init(&fdDIR);
+}
 int main(int argc, char * argv[]){
-    fdDir *DIR;
-       printf("The directory LBA is %d\n", fs_init(DIR));
-        // char *mode = "E07";
-        // int num = (int)strtol(mode, NULL, 16); 
-        // int m_t = 0x777 & num; 
-        // printf("Unsigned char: %x\n", m_t);
-        return 0;
+       printf("LBA is %llu\n", fdDIR.directoryStartLocation);
+       return 0;
 }
 
 int fs_init(fdDir *DIR){
@@ -21,13 +21,19 @@ int fs_init(fdDir *DIR){
     uint64_t directoryStartLocation = 64;
     for(unsigned int i = 0; i < actualNumOfDE; ++i){
         if(i == 0){
-            strcpy((directories + i) -> dirEntryName, "root");
+            strcpy((directories + i) -> dirEntryName, ".");
+            (directories + i) -> dirEntryLocation = 0;
+            (directories + i) -> dirParentLocation = 0;
+        }else if(i == 1){
+            strcpy((directories + i) -> dirEntryName, "..");
+            (directories + i) -> dirEntryLocation = 0;
+            (directories + i) -> dirParentLocation = 0;
         }else{
             strcpy((directories + i)
-             -> dirEntryName, "");
+             -> dirEntryName, "undefined");
+            (directories + i) -> dirEntryLocation = UNKNOWN_LOCATION;;
+            (directories + i) -> dirParentLocation = UNKNOWN_LOCATION;
         }
-        (directories + i) -> dirEntryLocation = i;
-        (directories + i) -> dirParentLocation = i;
         for(int j = 0; j < MIN_CHILD_NUM; ++j){
             ((directories + i) -> childrenLocation)[j] = UNKNOWN_LOCATION;
         }
@@ -47,21 +53,21 @@ int fs_init(fdDir *DIR){
     /*
     *  To-do: need to LBA Write
     */
-    DIR = malloc(sizeof (fdDir));
     DIR -> directories = malloc(actualNumOfDE * sizeof(fs_directory_entry));
     DIR -> directoryStartLocation = directoryStartLocation;
     DIR -> dirEntryPosition = 0; 
-    DIR -> directories = directories;  
+    DIR -> directories = directories;
+    DIR -> numberOfDir = actualNumOfDE;
     fs_display(DIR->directories,actualNumOfDE);
-    printf("test mkdir:\n");
-    fs_mkdir("root\\", 0777);
+//    printf("test mkdir:\n");
+//    fs_mkdir("root\\", 0777);
     return directoryStartLocation;
 }
 
 // Test function for display DE info
 void fs_display(fs_directory_entry *pt, int numOfDE){
     printf("The content of DE is:\n");
-    for(unsigned int i = 0; i < 1; ++i){
+    for(unsigned int i = 0; i < 3; ++i){
         printf("#%d DE:\n",i);
         printf("The entry name is %s\n", (pt + i)->dirEntryName);
         printf("Directory Location of current is %d\n", (pt + i)->dirEntryLocation);
@@ -131,6 +137,14 @@ fdDir * fs_opendir(const char *name){
     2) Located the DE of current working directory. If we can
     located it, set the current working directory(use another function) as provided. Otherwise just 
     */
+   // code test start
+   fdDir *cwdDir = malloc(sizeof(fdDIR));
+   cwdDir -> directoryStartLocation = fdDIR.directoryStartLocation;
+   cwdDir -> directories = fdDIR.directories;
+   
+   // code test end
+   // the code section above should be done
+   // by reading for LBA to construct the new directories
    return NULL;
 }
 /*===========================================================

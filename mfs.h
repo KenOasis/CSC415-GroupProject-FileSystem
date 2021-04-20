@@ -74,14 +74,15 @@ typedef struct
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
 	unsigned short  d_reclen;		/*length of this record */
 	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
+	unsigned short  numberOfDir; /* Total number of directory */
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
-    fs_directory_entry *directories; 
+  fs_directory_entry *directories; 
 	} fdDir;
 
 // Test funcitions
 void fs_display(fs_directory_entry *pt, int numOfDE);
 // End of test functions
-int fs_init(fdDir *DIR);
+static int fs_init(fdDir *DIR);
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
 fdDir * fs_opendir(const char *name);
@@ -112,4 +113,6 @@ int fs_stat(const char *path, struct fs_stat *buf);
 
 void display_time(time_t t); // helper to display formatted time 
 void print_accessmode(int access_mode, int file_type); // helper to display accessmod as "drwxrwxrwx" form
+
+fdDir fdDIR;
 #endif
