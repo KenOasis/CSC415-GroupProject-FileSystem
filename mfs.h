@@ -22,7 +22,7 @@
 #include <limits.h>
 #include "b_io.h"
 //#include "freeSpace.h"
-#include "fslow.h"
+#include "fsLow.h"
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR
@@ -38,6 +38,29 @@ typedef u_int32_t uint32_t;
 #endif
 
 
+typedef struct{
+    char      fm_ownername[32];     /* ownername of the file */
+    char      fm_groupownername[32];/* group ownername of the file */
+	off_t     fm_size;    		/* total size, in bytes */
+	blksize_t fm_blksize; 		/* blocksize for file system I/O */
+	blkcnt_t  fm_blocks;  		/* number of 512B blocks allocated */
+	time_t    fm_accesstime;   	/* time of last access */
+	time_t    fm_modtime;   	/* time of last modification */
+	time_t    fm_createtime;   	/* time of last status change */
+    int       fm_accessmode;      /* access mode */
+}fs_metadata;
+
+typedef struct{
+	char dirEntryName[256];
+	unsigned short dirEntryLocation; /* Current directory entry position */
+	unsigned short dirParentLocation; /* Parent directory entry position */
+	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
+    unsigned short numberOfDirectories; /* Total number of directory */
+	unsigned char entryType; /* file or directory*/
+	uint64_t directoryStartLocation; /*Starting LBA of directory */
+	fs_metadata metaData; // file attributes
+}fs_directory_entry;
+
 struct fs_diriteminfo
 	{
     unsigned short d_reclen;    /* length of this record */
@@ -52,33 +75,13 @@ typedef struct
 	unsigned short  d_reclen;		/*length of this record */
 	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
 	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
+    fs_directory_entry *directories; 
 	} fdDir;
 
-typedef struct{
-	char      fm_ownername[32];     /* ownername of the file */
-  char      fm_groupownername[32];/* group ownername of the file */
-	off_t     fm_size;    		/* total size, in bytes */
-	blksize_t fm_blksize; 		/* blocksize for file system I/O */
-	blkcnt_t  fm_blocks;  		/* number of 512B blocks allocated */
-	time_t    fm_accesstime;   	/* time of last access */
-	time_t    fm_modtime;   	/* time of last modification */
-	time_t    fm_createtime;   	/* time of last status change */
-  int       fm_accessmode;      /* access mode */
-}fs_metadata;
-
-typedef struct{
-	char dirEntryName[256];
-	unsigned short dirEntryLocation; /* Current directory entry position */
-	unsigned short dirParentLocation; /* Parent directory entry position */
-	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
-	unsigned short numberOfDirectories; /* Total number of directory */
-	unsigned char entryType; /* file or directory*/
-	uint64_t directoryStartLocation; /*Starting LBA of directory */
-	fs_metadata metaData; // file attributes
-}fs_directory_entry;
-
-
-int fs_init(); // not finished, need LBA write 
+// Test funcitions
+void fs_display(fs_directory_entry *pt, int numOfDE);
+// End of test functions
+int fs_init(fdDir *DIR);
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
 fdDir * fs_opendir(const char *name);
@@ -86,25 +89,22 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp);
 int fs_closedir(fdDir *dirp);
 
 char * fs_getcwd(char *buf, size_t size);
-int fs_setcwd(char *buf);   //linux chdir
+int fs_setcwd(char *buf);   //linux chdirs
 int fs_isFile(char * path);	//return 1 if file, 0 otherwise
 int fs_isDir(char * path);		//return 1 if directory, 0 otherwise
 int fs_delete(char* filename);	//removes a file
 
-
-
-
 struct fs_stat
 	{
-	char      st_ownername[32];     /* ownername of the file */
-	char      st_groupownername[32];/* group ownername of the file */
+    char      st_ownername[32];     /* ownername of the file */
+    char      st_groupownername[32];/* group ownername of the file */
 	off_t     st_size;    		/* total size, in bytes */
 	blksize_t st_blksize; 		/* blocksize for file system I/O */
 	blkcnt_t  st_blocks;  		/* number of 512B blocks allocated */
 	time_t    st_accesstime;   	/* time of last access */
 	time_t    st_modtime;   	/* time of last modification */
 	time_t    st_createtime;   	/* time of last status change */
-	
+	int       access_mode;      /* access mode */
 	/* add additional attributes here for your file system */
 	};
 
