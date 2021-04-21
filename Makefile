@@ -37,7 +37,7 @@
 ROOTNAME=fsLowDemo
 HW=
 FOPTION=
-RUNOPTIONS=SampleVolume 10000000 512
+RUNOPTIONS=
 CC=gcc
 CFLAGS= -g -I.
 LIBS =pthread
