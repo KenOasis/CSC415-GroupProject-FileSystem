@@ -25,7 +25,8 @@
 #include <time.h>
 #include "fsLow.h"
 #include "mfs.h"
-
+#include "freeSpace.h"
+#include "vcb.h"
 int main (int argc, char *argv[])
 	{	
 	char * filename;
@@ -51,10 +52,13 @@ int main (int argc, char *argv[])
 	char * buf = malloc(blockSize *2);
 	char * buf2 = malloc(blockSize *2);
 	memset (buf, 0, blockSize*2);
-	strcpy (buf, "Now is the time for all good people to come to the aid of their countrymen\n");
-	strcpy (&buf[blockSize+10], "Four score and seven years ago our fathers brought forth onto this continent a new nation\n");
+	vcb v0 = initializeVCB(512 * 2, 512);
+
+	memcpy(buf, &v0, sizeof(v0));
+	// strcpy (buf, "Now is the time for all good people to come to the aid of their countrymen\n");
+	// strcpy (&buf[blockSize+10], "Four score and seven years ago our fathers brought forth onto this continent a new nation\n");
 	LBAwrite (buf, 2, 0);
-	LBAwrite (buf, 2, 3);
+	// LBAwrite (buf, 2, 3);
 	LBAread (buf2, 2, 0);
 	if (memcmp(buf, buf2, blockSize*2)==0)
 		{

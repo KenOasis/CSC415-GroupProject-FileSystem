@@ -42,7 +42,7 @@ CC=gcc
 CFLAGS= -g -I.
 LIBS =pthread
 DEPS = 
-ADDOBJ= fsLow.o
+ADDOBJ= fsLow.o freeSpace.o mfs.o vcb.o
 OBJ = $(ROOTNAME)$(HW)$(FOPTION).o $(ADDOBJ)
 
 %.o: %.c $(DEPS)
