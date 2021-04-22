@@ -17,4 +17,4 @@ typedef struct vcb {
  * @param blocksize The size of the the whole volume
  * @return void
  */
-void initializeVCB(uinit64_t volumesize)
+void initializeVCB(uinit64_t volumesize, uint64_t blocksize);
