@@ -2,97 +2,24 @@
 //#include "freeSpace.h"
 #include "fsLow.h"
 #include "mfs.h"
+#include "vcb.h"
+// void __attribute__ ((constructor)) premain()
+// {   // THIS IS JUST FOR TEST 
+//        fs_init(&fdDIR);
+// }
+// int main(int argc, char * argv[]){
+//        printf("LBA is %llu\n", fdDIR.directoryStartLocation);
+//        return 0;
+// }
 
-void __attribute__ ((constructor)) premain()
-{   // THIS IS JUST FOR TEST 
-       fs_init(&fdDIR);
-}
-int main(int argc, char * argv[]){
-       printf("LBA is %llu\n", fdDIR.directoryStartLocation);
-       return 0;
-}
-
-int fs_init(fdDir *DIR){
-    int blockCount = (MIN_DE_NUM * sizeof(fs_directory_entry) + MINBLOCKSIZE) / MINBLOCKSIZE;
-    int actualNumOfDE = (blockCount * MINBLOCKSIZE) / sizeof(fs_directory_entry);
-    fs_directory_entry *directories =
-        malloc(actualNumOfDE * sizeof(fs_directory_entry));
-    // uint64_t directoryStartLocation = findMultipleBlocks(blockCount,vec);
-    uint64_t directoryStartLocation = 64;
-    for(unsigned int i = 0; i < actualNumOfDE; ++i){
-        if(i == 0){
-            strcpy((directories + i) -> dirEntryName, ".");
-            (directories + i) -> dirEntryLocation = 0;
-            (directories + i) -> dirParentLocation = 0;
-        }else if(i == 1){
-            strcpy((directories + i) -> dirEntryName, "..");
-            (directories + i) -> dirEntryLocation = 0;
-            (directories + i) -> dirParentLocation = 0;
-        }else{
-            strcpy((directories + i)
-             -> dirEntryName, "undefined");
-            (directories + i) -> dirEntryLocation = UNKNOWN_LOCATION;;
-            (directories + i) -> dirParentLocation = UNKNOWN_LOCATION;
-        }
-        for(int j = 0; j < MIN_CHILD_NUM; ++j){
-            ((directories + i) -> childrenLocation)[j] = UNKNOWN_LOCATION;
-        }
-        (directories + i) -> entryType = FT_DIRECTORY;
-        (directories + i) -> numberOfDirectories = actualNumOfDE;
-        (directories + i) -> directoryStartLocation = directoryStartLocation;
-        strcpy(((directories + i) -> metaData).fm_ownername, "staff");
-        strcpy(((directories + i) -> metaData).fm_groupownername, "staff");
-        ((directories + i) -> metaData).fm_size = blockCount * MINBLOCKSIZE;
-        ((directories + i) -> metaData).fm_blksize = MINBLOCKSIZE;
-        ((directories + i) -> metaData).fm_blocks = blockCount;
-        ((directories + i) -> metaData).fm_accesstime = time(NULL);
-        ((directories + i) -> metaData).fm_modtime = time(NULL);
-        ((directories + i) -> metaData).fm_createtime = time(NULL);
-        ((directories + i) -> metaData).fm_accessmode = 0063;
-    }
-    /*
-    *  To-do: need to LBA Write
-    */
-    DIR -> directories = malloc(actualNumOfDE * sizeof(fs_directory_entry));
-    DIR -> directoryStartLocation = directoryStartLocation;
-    DIR -> dirEntryPosition = 0; 
-    DIR -> directories = directories;
-    DIR -> numberOfDir = actualNumOfDE;
-    fs_display(DIR->directories,actualNumOfDE);
-//    printf("test mkdir:\n");
-//    fs_mkdir("root\\", 0777);
-    return directoryStartLocation;
+uint64_t fs_init(){
+    int blockCount = (MIN_DE_NUM * sizeof(fs_de) + MINBLOCKSIZE) / MINBLOCKSIZE;
+    int actualNumOfDE = (blockCount * MINBLOCKSIZE) / sizeof(fs_de);
+    return 512;
 }
 
 // Test function for display DE info
-void fs_display(fs_directory_entry *pt, int numOfDE){
-    printf("The content of DE is:\n");
-    for(unsigned int i = 0; i < 3; ++i){
-        printf("#%d DE:\n",i);
-        printf("The entry name is %s\n", (pt + i)->dirEntryName);
-        printf("Directory Location of current is %d\n", (pt + i)->dirEntryLocation);
-        printf("Directory Location of parent is %d\n", (pt + i)->dirParentLocation);
-        printf("entryType = %d\n", (int)((pt + i)->entryType));
-        for(int j = 0; j < MIN_CHILD_NUM; ++j){
-            printf("Child %d location is: %d\n", j ,((pt + i) -> childrenLocation)[j]);
-        }
-        printf("LBA of directory is:%llu\n", (pt + i) -> directoryStartLocation);
-        printf("Meta data:\n");
-        printf("The owner name is %s \n", ((pt + i) -> metaData).fm_ownername);
-        printf("The group owner name is %s \n", ((pt + i) -> metaData).fm_groupownername);
-        printf("size is %lld\n", ((pt + i) -> metaData).fm_size);
-        printf("blocksize is %d", ((pt + i) -> metaData).fm_blksize);
-        printf("# of blocks is %lld\n",((pt + i) -> metaData).fm_blocks);
-        printf("The access time is: ");
-        display_time(((pt + i) -> metaData).fm_accesstime);
-        printf("\nThe modified time is: ");
-        display_time(((pt + i) -> metaData).fm_modtime);
-        printf("\nThe created time is: ");
-        display_time(((pt + i) -> metaData).fm_createtime);
-        printf("\n");
-        print_accessmode(((pt + i) -> metaData).fm_accessmode, (int)((pt + i)->entryType));
-        printf("\n");
-    }
+void fs_display(){
 }
 // End of test functions
 /*===========================================================

@@ -39,27 +39,22 @@ typedef u_int32_t uint32_t;
 
 
 typedef struct{
-    char      fm_ownername[32];     /* ownername of the file */
-    char      fm_groupownername[32];/* group ownername of the file */
-	off_t     fm_size;    		/* total size, in bytes */
-	blksize_t fm_blksize; 		/* blocksize for file system I/O */
-	blkcnt_t  fm_blocks;  		/* number of 512B blocks allocated */
-	time_t    fm_accesstime;   	/* time of last access */
-	time_t    fm_modtime;   	/* time of last modification */
-	time_t    fm_createtime;   	/* time of last status change */
-    int       fm_accessmode;      /* access mode */
-}fs_metadata;
+	off_t     fs_size;    		/* total size, in bytes */
+	blksize_t fs_blksize; 		/* blocksize for file system I/O */
+	blkcnt_t  fs_blocks;  		/* number of 512B blocks allocated */
+	time_t    fs_accesstime;   	/* time of last access */
+	time_t    fs_modtime;   	/* time of last modification */
+	time_t    fs_createtime;   	/* time of last status change */
+	uint64_t  fs_address;  /* inode address to find the actual data */
+  //int       fm_accessmode;      /* access mode */
+}fs_inode;
 
 typedef struct{
-	char dirEntryName[256];
-	unsigned short dirEntryLocation; /* Current directory entry position */
-	unsigned short dirParentLocation; /* Parent directory entry position */
-	unsigned short childrenLocation[MIN_CHILD_NUM]; /* Location Of Children Entry, if entryType is file then it is all -1*/
-    unsigned short numberOfDirectories; /* Total number of directory */
-	unsigned char entryType; /* file or directory*/
-	uint64_t directoryStartLocation; /*Starting LBA of directory */
-	fs_metadata metaData; // file attributes
-}fs_directory_entry;
+	char de_name[256];
+	unsigned short de_inode; /* inode number of current directory */
+	unsigned short de_dotdot_inode; /* inode number of parent direcotry */
+	unsigned char de_entryType; /* entry type , file or directory*/
+}fs_de;
 
 struct fs_diriteminfo
 	{
@@ -75,14 +70,13 @@ typedef struct
 	unsigned short  d_reclen;		/*length of this record */
 	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
 	unsigned short  numberOfDir; /* Total number of directory */
-	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
-  fs_directory_entry *directories; 
+	uint64_t	directoryStartLocation;		/*Starting LBA of directory */ 
 	} fdDir;
 
 // Test funcitions
-void fs_display(fs_directory_entry *pt, int numOfDE);
+void fs_display();
 // End of test functions
-static int fs_init(fdDir *DIR);
+uint64_t fs_init();
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
 fdDir * fs_opendir(const char *name);
@@ -97,8 +91,6 @@ int fs_delete(char* filename);	//removes a file
 
 struct fs_stat
 	{
-    char      st_ownername[32];     /* ownername of the file */
-    char      st_groupownername[32];/* group ownername of the file */
 	off_t     st_size;    		/* total size, in bytes */
 	blksize_t st_blksize; 		/* blocksize for file system I/O */
 	blkcnt_t  st_blocks;  		/* number of 512B blocks allocated */

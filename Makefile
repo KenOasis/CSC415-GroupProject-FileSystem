@@ -34,15 +34,15 @@
 #
 
 
-ROOTNAME=fsLowDemo
+ROOTNAME=testDriver
 HW=
 FOPTION=
-RUNOPTIONS=SampleVolume 10000000 512
+RUNOPTIONS=
 CC=gcc
 CFLAGS= -g -I.
 LIBS =pthread
 DEPS = 
-ADDOBJ= fsLow.o
+ADDOBJ= fsLow.o freeSpace.o vcb.o mfs.o
 OBJ = $(ROOTNAME)$(HW)$(FOPTION).o $(ADDOBJ)
 
 %.o: %.c $(DEPS)
