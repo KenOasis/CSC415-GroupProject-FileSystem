@@ -27,8 +27,7 @@
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR
 #define FT_LINK	DT_LNK
-#define MIN_DE_NUM 16
-#define MIN_CHILD_NUM 16
+#define MIN_DE_NUM 128
 #define UNKNOWN_LOCATION USHRT_MAX
 #ifndef uint64_t
 typedef u_int64_t uint64_t;
@@ -45,21 +44,35 @@ typedef struct{
 	time_t    fs_accesstime;   	/* time of last access */
 	time_t    fs_modtime;   	/* time of last modification */
 	time_t    fs_createtime;   	/* time of last status change */
+	unsigned char fs_entry_type; /* entry type , file or directory*/
 	uint64_t  fs_address;  /* inode address to find the actual data */
-  //int       fm_accessmode;      /* access mode */
+  int       fs_accessmode;      /* access mode */
 }fs_inode;
 
 typedef struct{
 	char de_name[256];
-	unsigned short de_inode; /* inode number of current directory */
-	unsigned short de_dotdot_inode; /* inode number of parent direcotry */
-	unsigned char de_entryType; /* entry type , file or directory*/
+	uint32_t de_inode; /* inode number of current directory */
+	uint32_t de_dotdot_inode; /* inode number of parent direcotry */
 }fs_de;
+
+
+typedef struct{
+	uint64_t d_de_start_location;		/* Starting LBA of directory entries */ 
+	uint64_t d_inode_start_location; /* Starting LBA of the inodes */
+	uint32_t d_num_inodes; /* number of inodes */
+	uint32_t d_num_DEs; /* number of directory entry */
+	fs_inode * d_inodes; /* inodes, not pertain */
+	fs_de * d_DEs; /* DEs, not pertain */
+}fs_directory;
+
+typedef struct{
+	 void* Dir;
+}DirInfo;
 
 struct fs_diriteminfo
 	{
     unsigned short d_reclen;    /* length of this record */
-    unsigned char fileType;    
+    unsigned char file_type;    
     char d_name[256]; 			/* filename max filename is 255 characters */
 	};
 
@@ -69,14 +82,13 @@ typedef struct
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
 	unsigned short  d_reclen;		/*length of this record */
 	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
-	unsigned short  numberOfDir; /* Total number of directory */
-	uint64_t	directoryStartLocation;		/*Starting LBA of directory */ 
+	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
+	fs_de *childrens;
 	} fdDir;
 
-// Test funcitions
-void fs_display();
-// End of test functions
-uint64_t fs_init();
+
+
+uint64_t fs_init(/*freeSpace * vector*/);
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
 fdDir * fs_opendir(const char *name);
@@ -100,11 +112,20 @@ struct fs_stat
 	int       access_mode;      /* access mode */
 	/* add additional attributes here for your file system */
 	};
+typedef struct{
+	int length;
+	char **dir_names;
+}splitDIR;
 
 int fs_stat(const char *path, struct fs_stat *buf);
 
+splitDIR* split_dir(const char *name);
+void free_split_dir(splitDIR *spdir);
 void display_time(time_t t); // helper to display formatted time 
 void print_accessmode(int access_mode, int file_type); // helper to display accessmod as "drwxrwxrwx" form
 
-fdDir fdDIR;
+
+
+DirInfo Dir;
+// remember to free the pointer at end of main
 #endif

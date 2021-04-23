@@ -12,135 +12,147 @@
 //        return 0;
 // }
 
-uint64_t fs_init(){
-    int blockCount = (MIN_DE_NUM * sizeof(fs_de) + MINBLOCKSIZE) / MINBLOCKSIZE;
-    int actualNumOfDE = (blockCount * MINBLOCKSIZE) / sizeof(fs_de);
-    return 512;
+uint64_t fs_init(/*freeSpace * vector*/){
+    int blockCountInode = (MIN_DE_NUM * sizeof(fs_inode) + MINBLOCKSIZE - 1) / MINBLOCKSIZE;
+    int actualNumInode = (blockCountInode * MINBLOCKSIZE) / sizeof(fs_inode);
+    fs_inode *inodes = malloc(MINBLOCKSIZE * blockCountInode);
+    int blockCountDE = (actualNumInode * sizeof(fs_de) + MINBLOCKSIZE - 1) / MINBLOCKSIZE;
+    /* the size of the inode is bigger than the size of DE, so we use the actual number of inodes to
+    allocated the memory */
+    fs_de *DEs = malloc(MINBLOCKSIZE * blockCountDE);
+
+    // uint64_t LBA_inodes = findMultipleBlocks(blockCountInode,vector);
+    uint64_t LBA_inodes = 128; // temperary for test
+    //Initialize inodes
+    for(int i = 0; i < actualNumInode; ++i){
+        (inodes + i)->fs_size = 0;
+        (inodes + i)->fs_blksize = 0;
+        (inodes + i)->fs_blocks = 0;
+        (inodes + i)->fs_accesstime = time(NULL);
+        (inodes + i)->fs_modtime = time(NULL);
+        (inodes + i)->fs_createtime = time(NULL);
+        (inodes + i)->fs_entry_type = DT_DIR;
+        (inodes + i)->fs_address = ULLONG_MAX;
+        (inodes + i)->fs_accessmode = 0777;
+    }
+    LBAwrite(inodes,blockCountInode,LBA_inodes);
+    //Initialize DEs
+    for(int i = 0; i < actualNumInode; ++i){
+        if( i == 0){
+            strcpy((DEs + i)->de_name, ".root");
+            (DEs + i)->de_dotdot_inode = 0;
+        }else{
+            strcpy((DEs + i)->de_name, "undefined");
+            (DEs + i)->de_dotdot_inode = UINT_MAX;
+        }
+        (DEs + i)->de_inode = i;
+    }
+    // uint64_t LBA_DEs = findMultipleBlocks(blockCountDE, vector);
+    uint64_t LBA_DEs = 256; // for test only
+    LBAwrite(DEs, blockCountDE, LBA_DEs);
+    fs_directory *directory = malloc(sizeof(directory));
+
+    directory->d_de_start_location = LBA_DEs;
+    directory->d_inode_start_location = LBA_inodes;
+    directory->d_num_inodes = actualNumInode;
+    directory->d_num_DEs = actualNumInode;
+    directory->d_inodes = inodes;
+    directory->d_DEs = DEs;
+    // uint64_t LBA_directory = findFreeBlock(vector);
+    uint64_t LBA_directory = 64; // only for test
+    Dir.Dir = malloc(sizeof(fs_directory));
+    Dir.Dir = directory;
+    LBAwrite(directory, 1, LBA_directory);
+    free(inodes);
+    free(DEs);
+    // free(directory);
+    return LBA_directory;
 }
 
-// Test function for display DE info
-void fs_display(){
-}
-// End of test functions
-/*===========================================================
-* mkdir - create a new directory - Linux -> mkdir
-============================================================*/
 int fs_mkdir(const char *pathname, mode_t mode){
-    // get the struct that hold all the DEs from LBA 'disl'
-    /*
-    ***To - Do ****
-    1) Get the current path and split it to find the current 
-       working directory.
-    2) Located the DE of current working directory.
-    3) Searching for the vacant child position and create the new DE
-       for the new dir; if no vacant one then just extend thd length
-       of the array of children pos of the current DE
-    4) set up the attribute ofs new DE
-    5) LBA write the new DE to the 'disk'
-    */
     return 0;
 }
-/*===========================================================
-* rmdir - remove a directory - Linux -> rmdir
-============================================================*/
+
 int fs_rmdir(const char *pathname){
-    /*
-    ***To - Do***
-    1) Get the current path and split it to find the current
-       working directory
-    2) Located the DE of current working directory
-    3) Check whether the giving dir name is existen in the children;
-       if yes, check whether it is a directory and whether it is empty, if both yes them you can delete it, otherwise return an error or an exeception.
-    */
    return 0;
 }
-/*===========================================================
-* opendir - open a directory  - Linux -> cd
-============================================================*/
+
 fdDir * fs_opendir(const char *name){
-    /*
-    ***To - Do***
-    1) Split the provided path and locate the current working directory.
-    2) Located the DE of current working directory. If we can
-    located it, set the current working directory(use another function) as provided. Otherwise just 
-    */
-   // code test start
-   fdDir *cwdDir = malloc(sizeof(fdDIR));
-   cwdDir -> directoryStartLocation = fdDIR.directoryStartLocation;
-   cwdDir -> directories = fdDIR.directories;
-   
-   // code test end
-   // the code section above should be done
-   // by reading for LBA to construct the new directories
+   splitDIR *spdir = split_dir(name);
+   //Restart from here!!!
+   free_split_dir(spdir);
    return NULL;
 }
-/*===========================================================
-* readdir - read a directory info - Linux -> no command but it
-could use for ls
-============================================================*/
+
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-    /*
-    ***To - Do***
-    1) use fdDir to locate the DE.
-    2) return the fs_diriteminfo struct generated from the DE.
-    */
+
    return NULL;
 }
-/*===========================================================
-* close dir - close an opened directory  - Linux -> quit
-============================================================*/
 int fs_closedir(fdDir *dirp){
-    /*
-    ***To - Do***
-    1) closed dir ???? 
-    */
    return 0;
 }
-/*===========================================================
-* getcwd - get current working directory - Linux -> pwd
-============================================================*/
+
 char * fs_getcwd(char *buf, size_t size){
-    /*
-    ***To - Do***
-    1) Located the DE for current working directory
-    2) up-serach to the root to find the cwd in string and return it.
-    */
    return 0;
 }
-/*===========================================================
-* setcwd - change the current working directory - Linux -> chdir
-============================================================*/
+
 int fs_setcwd(char *buf){
-    /*
-    ***To - Do***
-    1) Located the DE for the giving dir
-    2) set the cwd as the giving dir
-    */
+
    return 0;
 }
-/*===========================================================
-* isFile - to validate the providing path is File or not 
-============================================================*/
+
 int fs_isFile(char * path){
     return 0;
     }//return 1 if file, 0 otherwise
-/*===========================================================
-* isDir - to validate the provding path is directory or not
-============================================================*/
+
 int fs_isDir(char * path){
     return 0;
 }		//return 1 if directory, 0 otherwise
-/*===========================================================
-* delete - delete a file for the give dir
-============================================================*/
+
 int fs_delete(char* filename){
     return 0;
 }	//removes a file
 
-/*===========================================================
-* Helper method
-============================================================*/
+//Helper
 
+splitDIR* split_dir(const char *name){
+    const char delimiter[2] = "/";
+    char *pathname;
+    char *token;
+    int length = 0;
+    strcpy(pathname, name);
+    token = strtok(pathname, delimiter);
+    while(token != NULL){
+        length++;
+        token = strtok(NULL, delimiter);
+    }
+
+    splitDIR *sDir = malloc(sizeof(splitDIR));
+    sDir->dir_names = (char**)malloc(sizeof(char *) * length);
+    sDir->length = length;
+    for(int i = 0; i < length; ++i){
+        *(sDir->dir_names + i) = malloc(sizeof(char) * 32);
+    }
+    // remember to free outside the function
+    strcpy(pathname, name);
+    token = strtok(pathname, delimiter);
+    int i = 0;
+    while ((token != NULL) && (strcmp(token, "") != 0)) 
+    {
+        strcpy(*(sDir->dir_names + i), token);
+        i++;
+        token = strtok(NULL, delimiter);
+    }
+
+    return sDir;    
+}
+
+void free_split_dir(splitDIR *spdir){
+    for(int i = 0; i < spdir->length; ++i){
+        free(*(spdir->dir_names + i));
+    }
+    free(spdir);
+}
 void display_time(time_t t){
     
     if (t == -1) {
