@@ -39,6 +39,7 @@ b_fcb fcbArray[MAXFCBS];
 
 int startup = 0;	//Indicates that this has not been initialized
 
+
 // Interface to read a buffer
 
 // Filling the callers request is broken into three parts
