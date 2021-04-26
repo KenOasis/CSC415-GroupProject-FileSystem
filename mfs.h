@@ -80,9 +80,9 @@ struct fs_diriteminfo
 typedef struct
 	{
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
-	uint32_t	dirEntryPosition;	/*which directory entry position, like file pos */
+	uint32_t	de_pos;	/*which directory entry position, like file pos */
 	uint32_t num_children;
-	fs_de *childrens;
+	fs_de **childrens;
 	} fdDir;
 
 typedef struct{

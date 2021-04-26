@@ -42,8 +42,9 @@ int main (int argc, char *argv[])
 	fs_directory* directory = malloc(blockSize);
 	LBAread(directory, 1, v0->LBA_root_directory);
 	reload_directory(directory);
-	char *name = "root/Users/Jimmy";
+	char *name = "root//";
 	fdDir *fd = fs_opendir(name);
+	printf("children number is %u\n", fd->num_children);
 	free(fd);
 	free_directory(directory);
 	free(v0);

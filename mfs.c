@@ -104,17 +104,13 @@ fdDir * fs_opendir(const char *name){
        return NULL;
    }
    printf("pos is %u\n", de_pos);
-   uint32_t num_children = 8;
-   blkcnt_t children_blocks = (num_children * sizeof(fs_de) + MINBLOCKSIZE - 1) / MINBLOCKSIZE;
-   dirp->childrens = malloc(MINBLOCKSIZE * children_blocks);
-   dirp->dirEntryPosition = de_pos;
+   dirp->de_pos = de_pos;
    find_childrens(dirp);
    free_split_dir(spdir);
    return dirp;
 }
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-
    return NULL;
 }
 int fs_closedir(fdDir *dirp){
@@ -187,46 +183,50 @@ uint32_t find_DE_pos(splitDIR *spdir){
         }
     }
     if(found_dir_count == spdir->length){
+        free_directory(directory);
         return pos;
     }else{
+        free_directory(directory);
         return UINT32_MAX;
     }
 }
 
 int find_childrens(fdDir *dirp){
-    // uint32_t parent_inode = dirp->dirEntryPosition;
-    // fs_directory* directory = (fs_directory*)fs_DIR.Dir;
-    // int count_children = 0;
-    // if(parent_inode != UINT32_MAX){
-    //     for(int i = 0; i < directory->d_num_DEs; ++i){
-    //         if((directory->d_DEs + i)->de_dotdot_inode == parent_inode){
-    //             count_children++;
-    //         }
-    //     }
-    // }
-    // if(count_children == 0){
-    //     return 0;
-    // }else{
-    //     dirp->childrens = (fs_de**)malloc(sizeof(fs_de*)*count_children);
-    //     for(int i = 0; i < count_children; ++i){
-    //         *(dirp->childrens + i) = (fs_de*)malloc(sizeof(fs_de));
-    //     }
-    //     dirp->num_children = count_children;
-    //     int pos = 0;
-    //     for(int i =0; i < directory->d_num_DEs; ++i){
-    //         if((directory->d_DEs + i)->de_dotdot_inode == parent_inode){
-    //             *(dirp->childrens + pos) = (directory->d_DEs + i);
-    //             count_children--;
-    //         }
-    //         if(count_children == 0){
-    //             break;
-    //         }
-    //     }
-    //     return 1;
-    // }
-    return 0;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+	LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	reload_directory(directory);
+    uint32_t parent_inode = dirp->de_pos;
+    uint32_t count_children = 0;
+    uint32_t current_parent_inode;
+    for(int i = 0; i < directory->d_num_DEs; ++i){
+        current_parent_inode = (directory->d_dir_ents + i)->de_dotdot_inode;
+        if(current_parent_inode == parent_inode){
+            count_children++;
+        }
+    }
+    dirp->num_children = count_children;
+    dirp->childrens = (fs_de**)malloc(sizeof(fs_de*) * count_children);
+    for(int i = 0; i < count_children; ++i){
+        *(dirp->childrens + i) = (fs_de*)malloc(sizeof(fs_de));
+    }
+    int pos = 0;
+    for(int i = 0; i < directory->d_num_DEs; ++i){
+        fs_de *current_dir_ent = (directory->d_dir_ents + i);
+        current_parent_inode = current_dir_ent->de_dotdot_inode;
+        if(current_parent_inode == parent_inode){
+            *(dirp->childrens + pos) = current_dir_ent;
+            pos++;
+        }
+        if(pos == count_children){
+            break;
+        }
+    }
+    free_directory(directory);
+    return 1;
 }
 splitDIR* split_dir(const char *name){
+    // restart here! add . and .. into childrens
+    
     const char delimiter[2] = "/";
     char *pathname = malloc(sizeof(char)*256);
     char *token;
