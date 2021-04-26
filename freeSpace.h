@@ -2,12 +2,15 @@
 #define _FREESPACE_H
 
 #include <stdlib.h>
+#include <stdio.h>
+#include "fsLow.h"
 
 typedef struct  {
 	int* bitVector;
-	int nextFreePosition;
-	int nextFreeIndex;
+	//int nextFreePosition;
+	//int nextFreeIndex;
 	int size;
+	uint64_t LBABitVector; //LBA location of bit vector
 	int blocksNeeded;
 } freeSpace;
 
