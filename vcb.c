@@ -17,8 +17,8 @@ int initializeVCB(uint64_t volumesize, uint64_t blocksize) {
    v0 -> LBA_free_space = 1;
 
    // initialize directory
-   v0 -> LBA_root_directory = fs_init();
 
+   v0 -> LBA_root_directory = fs_init();
    LBAwrite(v0, 1, 1);
 
     return 1;

@@ -42,12 +42,22 @@ int main (int argc, char *argv[])
 	fs_directory* directory = malloc(blockSize);
 	LBAread(directory, 1, v0->LBA_root_directory);
 	reload_directory(directory);
-	char *name = "root//";
-	fdDir *fd = fs_opendir(name);
-	printf("children number is %u\n", fd->num_children);
-	free(fd);
+	char *name = "root/Users/";
+	fdDir *fdir = fs_opendir(name);
+	if(fdir != NULL){
+		printf("children number is %u\n", fdir->num_children);
+		int file_count =0;
+		struct fs_diriteminfo *dirinfo;
+		while((dirinfo = fs_readdir(fdir)) != NULL){
+			file_count++;
+			printf("file %d: %s\n", file_count, dirinfo->d_name);
+		}
+		free(dirinfo);
+	}
+	if(fdir != NULL){
+		free(fdir);
+	}
 	free_directory(directory);
-	free(v0);
 	closePartitionSystem();
 	return 0;	
 	}

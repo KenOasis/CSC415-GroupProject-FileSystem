@@ -71,7 +71,6 @@ typedef struct{
 
 struct fs_diriteminfo
 	{
-    unsigned short d_reclen;    /* length of this record */
     unsigned char file_type;    
     char d_name[256]; 			/* filename max filename is 255 characters */
 	};
@@ -81,6 +80,7 @@ typedef struct
 	{
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
 	uint32_t	de_pos;	/*which directory entry position, like file pos */
+	uint32_t cur_pos;
 	uint32_t num_children;
 	fs_de **childrens;
 	} fdDir;

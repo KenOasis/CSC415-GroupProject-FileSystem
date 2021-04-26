@@ -64,7 +64,6 @@ uint64_t fs_init(/*freeSpace * vector*/){
 
     LBAwrite(dir_ents, blockCountDE, LBA_dir_ents);
 
-    printf("actual number inodes = %d\n", actualNumInode);
     fs_directory *directory = (fs_directory*)malloc(sizeof(fs_directory));
     directory->d_de_start_location = LBA_dir_ents;
     directory->d_de_blocks = blockCountDE;
@@ -76,7 +75,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
     uint64_t LBA_root_directory = 64; // only for test
     // (fs_directory*)(fs_DIR.Dir) = malloc(sizeof(fs_directory));
     // fs_DIR.Dir = directory;
-    LBAwrite(directory, 2, LBA_root_directory);
+    LBAwrite(directory, 1, LBA_root_directory);
     fs_DIR.LBA_root_directory = LBA_root_directory;
     free(inodes);
     free(dir_ents);
@@ -95,8 +94,9 @@ int fs_rmdir(const char *pathname){
 fdDir * fs_opendir(const char *name){
    splitDIR *spdir = split_dir(name);
    fdDir *dirp;
-    dirp = malloc(sizeof(fdDir));
-    uint32_t de_pos = find_DE_pos(spdir);
+   dirp = malloc(sizeof(fdDir));
+   dirp->cur_pos = 0;
+   uint32_t de_pos = find_DE_pos(spdir);
    if(de_pos == UINT32_MAX){
        char *filename = *(spdir->dir_names + (spdir->length - 1));
        printf("no such file or direcotry: %s\n", filename);
@@ -111,7 +111,22 @@ fdDir * fs_opendir(const char *name){
 }
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-   return NULL;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+    LBAread(directory, 1, fs_DIR.LBA_root_directory);
+    reload_directory(directory);
+    if((dirp->cur_pos) < (dirp->num_children)){
+        struct fs_diriteminfo* dirinfo = malloc(sizeof(struct fs_diriteminfo));
+        uint32_t inode = (directory->d_dir_ents + dirp->cur_pos)->de_inode;
+        unsigned char file_type = (directory->d_inodes + inode)->fs_entry_type;
+        dirinfo->file_type = file_type;
+        strcpy(dirinfo->d_name, (*(dirp->childrens + dirp->cur_pos))->de_name);
+        free_directory(directory);
+        (dirp->cur_pos)++;
+        return dirinfo;
+    }else{
+        free_directory(directory);
+        return NULL;
+    }
 }
 int fs_closedir(fdDir *dirp){
    return 0;
@@ -198,7 +213,7 @@ int find_childrens(fdDir *dirp){
     uint32_t parent_inode = dirp->de_pos;
     uint32_t count_children = 0;
     uint32_t current_parent_inode;
-    for(int i = 0; i < directory->d_num_DEs; ++i){
+    for(int i = 1; i < directory->d_num_DEs; ++i){
         current_parent_inode = (directory->d_dir_ents + i)->de_dotdot_inode;
         if(current_parent_inode == parent_inode){
             count_children++;
@@ -210,7 +225,7 @@ int find_childrens(fdDir *dirp){
         *(dirp->childrens + i) = (fs_de*)malloc(sizeof(fs_de));
     }
     int pos = 0;
-    for(int i = 0; i < directory->d_num_DEs; ++i){
+    for(int i = 1; i < directory->d_num_DEs; ++i){
         fs_de *current_dir_ent = (directory->d_dir_ents + i);
         current_parent_inode = current_dir_ent->de_dotdot_inode;
         if(current_parent_inode == parent_inode){
@@ -226,7 +241,6 @@ int find_childrens(fdDir *dirp){
 }
 splitDIR* split_dir(const char *name){
     // restart here! add . and .. into childrens
-    
     const char delimiter[2] = "/";
     char *pathname = malloc(sizeof(char)*256);
     char *token;
