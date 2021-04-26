@@ -33,17 +33,9 @@ int main (int argc, char *argv[])
 	uint64_t blockSize;
     int retVal;
     
-	if (argc > 3)
-		{
-		filename = argv[1];
-		volumeSize = atoll (argv[2]);
-		blockSize = atoll (argv[3]);
-		}
-	else
-		{
-		printf ("Usage: fsLowDriver volumeFileName volumeSize blockSize\n");
-		return -1;
-		}
+		filename = "SampleVolume";
+		volumeSize = 50;
+		blockSize = 512;
 		
 	retVal = startPartitionSystem (filename, &volumeSize, &blockSize);	
 	printf("Opened %s, Volume Size: %llu;  BlockSize: %llu; Return %d\n", filename, (ull_t)volumeSize, (ull_t)blockSize, retVal);
