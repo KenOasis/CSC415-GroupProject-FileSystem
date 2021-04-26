@@ -58,16 +58,16 @@ typedef struct{
 
 typedef struct{
 	uint64_t d_de_start_location;		/* Starting LBA of directory entries */ 
-	uint64_t d_inode_start_location; /* Starting LBA of the inodes */
+	blkcnt_t d_de_blocks; /* number of blocks for directory entries */
+	uint64_t d_inode_start_location; /* Starting 
+	LBA of the inodes */
+	blkcnt_t d_inode_blocks; /* number of blocks for inodes */
 	uint32_t d_num_inodes; /* number of inodes */
 	uint32_t d_num_DEs; /* number of directory entry */
 	fs_inode * d_inodes; /* inodes, not pertain */
-	fs_de * d_DEs; /* DEs, not pertain */
+	fs_de * d_dir_ents; /* DEs, not pertain */
 }fs_directory;
 
-typedef struct{
-	 void* Dir;
-}DirInfo;
 
 struct fs_diriteminfo
 	{
@@ -80,12 +80,19 @@ struct fs_diriteminfo
 typedef struct
 	{
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
-	unsigned short  d_reclen;		/*length of this record */
-	unsigned short	dirEntryPosition;	/*which directory entry position, like file pos */
-	uint64_t	directoryStartLocation;		/*Starting LBA of directory */
+	uint32_t	dirEntryPosition;	/*which directory entry position, like file pos */
+	uint32_t num_children;
 	fs_de *childrens;
 	} fdDir;
 
+typedef struct{
+	 uint64_t LBA_root_directory;
+}DirInfo;
+
+typedef struct{
+	int length;
+	char **dir_names;
+}splitDIR;
 
 
 uint64_t fs_init(/*freeSpace * vector*/);
@@ -112,13 +119,13 @@ struct fs_stat
 	int       access_mode;      /* access mode */
 	/* add additional attributes here for your file system */
 	};
-typedef struct{
-	int length;
-	char **dir_names;
-}splitDIR;
 
 int fs_stat(const char *path, struct fs_stat *buf);
 
+int reload_directory(fs_directory *directory);
+void free_directory(fs_directory* directory);
+uint32_t find_DE_pos(splitDIR *spdir);
+int find_childrens(fdDir *dirp);
 splitDIR* split_dir(const char *name);
 void free_split_dir(splitDIR *spdir);
 void display_time(time_t t); // helper to display formatted time 
@@ -126,6 +133,6 @@ void print_accessmode(int access_mode, int file_type); // helper to display acce
 
 
 
-DirInfo Dir;
+DirInfo fs_DIR;
 // remember to free the pointer at end of main
 #endif

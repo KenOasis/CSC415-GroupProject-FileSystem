@@ -18,4 +18,5 @@ typedef struct vcb {
  * @param blocksize The size of the the whole volume
  * @return void
  */
-vcb* initializeVCB(uint64_t volumesize, uint64_t blocksize);
+int initializeVCB(uint64_t volumesize, uint64_t blocksize);
+vcb* bootVCB(uint64_t volumesize, uint64_t blocksize);
