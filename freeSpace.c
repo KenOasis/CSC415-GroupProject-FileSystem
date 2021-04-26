@@ -2,7 +2,7 @@
 
 freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
 	freeSpace *vector = malloc(sizeof(freeSpace));
-	vector->LBABitVector = ((sizeof(freeSpace) + 511) / 512) + 1; //size of freeSpace struct without the array
+	vector->LBABitVector = ((sizeof(freeSpace) + 511) / 512) + 2; //size of freeSpace struct without the array
 	int integers = (totalBlocks + 31) / 32; //how many integers in the int array
 	//printf("integers needed: %d\n", integers);
 	int blocksNeeded = ((integers * 32) + BytesPerBlock * 8 - 1) / (BytesPerBlock * 8); //amount of BITS needed for free space bit vector
@@ -27,7 +27,7 @@ freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
 
 u_int64_t findMultipleBlocks(int blockCount, freeSpace* vector) {
 	int consecutiveFree = 0; 						//tracks how many free spaces have been found in a row
-	int freeIndex = -1; 							//the bit index that is free, followed by more free space
+	int freeIndex = 0; 							//the bit index that is free, followed by more free space
 	for (int n = 0; n < vector->size; n++) { 		//iterates through the ints in the bitvector
 		for (int a = 0; a < 32; a++) { 				//iterates through the bits in bitvector
 			if ((vector->bitVector[n] & (1 << a)) == 0) {		//if vector bit is 0 aka free
@@ -40,7 +40,7 @@ u_int64_t findMultipleBlocks(int blockCount, freeSpace* vector) {
 				}
 			} else {								//chain of free bits not big enough
 				consecutiveFree = 0;
-				freeIndex = -1;
+				freeIndex = 0;
 			}
 			if (consecutiveFree >= blockCount) {	//found the necessary chunk, sets all used bits to 1 and return the index of first free bit
 				//printf("FREE BLOCKS werE FOUND\n");
@@ -92,8 +92,9 @@ int main() {
 	freeSpace* space = init_freeSpace(500, 512);
 	u_int64_t blockLocation = findMultipleBlocks(5, space);
 	u_int64_t blockLocationTwo = findMultipleBlocks(2, space);
-	freeSomeBits(3, 5, space);
+	freeSomeBits(4, 5, space);
 	blockLocation = findMultipleBlocks(5, space);
+	freeSomeBits(30, 2, space);
 	for (int n = 0; n < space->size; n++) {
 		printf("Integer %d: %d\n", n, space->bitVector[n]);
 	}
