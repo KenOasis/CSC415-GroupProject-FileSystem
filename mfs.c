@@ -119,7 +119,40 @@ int fs_mkdir(const char *pathname, mode_t mode){
 }
 
 int fs_rmdir(const char *pathname){
-   return 0;
+    int success_rmdir = 0;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+    LBAread(directory, 1, fs_DIR.LBA_root_directory);
+    reload_directory(directory);
+    char* path = malloc(sizeof(char)*256);
+    strcpy(path, pathname);
+    int is_dir = fs_isDir(path);
+    splitDIR *spdir = split_dir(path);
+    if(is_dir == 1){
+        uint32_t de_pos = find_DE_pos(spdir);
+        fs_de *de = (directory->d_dir_ents + de_pos);
+        uint32_t inode_pos = de->de_inode;
+        int is_empty_dir = 1;
+        for(int i = 0; i < directory->d_num_DEs; ++i){
+            if((directory->d_dir_ents + i)->de_dotdot_inode == inode_pos){
+                is_empty_dir = 0;
+                break;
+            }
+
+        }
+        if(is_empty_dir){
+            de->de_dotdot_inode = UINT32_MAX;
+            success_rmdir = 1;
+            write_direcotry(directory);
+        }else{
+            printf("%s is not a empty directory\n", de->de_name);
+        }      
+    }else{
+        printf("rmdir: %s: No such file or directory\n", *(spdir->dir_names + spdir->length - 1));
+    }
+    free(path);
+    free_split_dir(spdir);
+    free_directory(directory);
+   return success_rmdir;
 }
 
 fdDir * fs_opendir(const char *name){
@@ -134,7 +167,6 @@ fdDir * fs_opendir(const char *name){
        free_split_dir(spdir);
        return NULL;
    }
-   printf("pos is %u\n", de_pos);
    dirp->de_pos = de_pos;
    find_childrens(dirp);
    free_split_dir(spdir);

@@ -57,9 +57,7 @@ int main (int argc, char *argv[])
 		char *origpath = malloc(sizeof(char) * 128);
 		strcpy(origpath, name);
 		newpath = strcat(origpath,"Another file");
-		char *fakepath = "root/Jasons/Test";
-		// fs_mkdir(fakepath,0777);
-		printf("%d is dir ? %d is file?\n", fs_isDir(name), fs_isFile(name));
+		fs_rmdir(newpath);
 	}	
 	if(fdir != NULL){
 		free(fdir);
