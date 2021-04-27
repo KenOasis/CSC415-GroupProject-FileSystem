@@ -97,6 +97,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
     if(parent_pos != UINT32_MAX){
         if(duplicated_name){
             printf("mkdir: %s: File exists\n", new_dir_name);
+            free_split_dir(spdir);
             free_directory(directory);
             return 0;
         }else{
@@ -105,11 +106,13 @@ int fs_mkdir(const char *pathname, mode_t mode){
             fs_inode *inode = (directory->d_inodes + free_dir_ent);// inode is not change if it is directory (but not file)
             strcpy(de->de_name, new_dir_name);
             write_direcotry(directory);
+            free_split_dir(spdir);
             free_directory(directory);
             return 1;
         }
     }else{
         printf("mkdir: %s: No such file or directory\n", pathname);
+        free_split_dir(spdir);
         free_directory(directory);
         return 0;
     }
@@ -157,7 +160,12 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
     }
 }
 int fs_closedir(fdDir *dirp){
-   return 0;
+    for(int i = 0; i < dirp->num_children; ++i){
+        free(*(dirp->childrens + i));
+    }
+    free(dirp->childrens);
+    free(dirp);
+    return 1;
 }
 
 char * fs_getcwd(char *buf, size_t size){
@@ -170,11 +178,41 @@ int fs_setcwd(char *buf){
 }
 
 int fs_isFile(char * path){
-    return 0;
+    int is_file = 0;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+	LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	reload_directory(directory);
+    splitDIR *spdir = split_dir(path);
+    uint32_t de_pos = find_DE_pos(spdir);
+    if(de_pos != UINT32_MAX){
+        uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
+        unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
+        if(file_type == DT_REG){
+            is_file = 1;
+        }
+    }
+    free_split_dir(spdir);
+    free_directory(directory);
+    return is_file;
     }//return 1 if file, 0 otherwise
 
 int fs_isDir(char * path){
-    return 0;
+    int is_dir = 0;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+	LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	reload_directory(directory);
+    splitDIR *spdir = split_dir(path);
+    uint32_t de_pos = find_DE_pos(spdir);
+    if(de_pos != UINT32_MAX){
+        uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
+        unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
+        if(file_type == DT_DIR){
+            is_dir = 1;
+        }
+    }
+    free_split_dir(spdir);
+    free_directory(directory);
+    return is_dir;
 }		//return 1 if directory, 0 otherwise
 
 int fs_delete(char* filename){

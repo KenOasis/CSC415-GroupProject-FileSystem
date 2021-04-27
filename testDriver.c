@@ -58,8 +58,9 @@ int main (int argc, char *argv[])
 		strcpy(origpath, name);
 		newpath = strcat(origpath,"Another file");
 		char *fakepath = "root/Jasons/Test";
-		fs_mkdir(fakepath,0777);
-	}
+		// fs_mkdir(fakepath,0777);
+		printf("%d is dir ? %d is file?\n", fs_isDir(name), fs_isFile(name));
+	}	
 	if(fdir != NULL){
 		free(fdir);
 	}
