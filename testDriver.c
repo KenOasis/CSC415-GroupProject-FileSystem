@@ -53,6 +53,12 @@ int main (int argc, char *argv[])
 			printf("file %d: %s\n", file_count, dirinfo->d_name);
 		}
 		free(dirinfo);
+		char *newpath = malloc(sizeof(char) * 256);
+		char *origpath = malloc(sizeof(char) * 128);
+		strcpy(origpath, name);
+		newpath = strcat(origpath,"Another file");
+		char *fakepath = "root/Jasons/Test";
+		fs_mkdir(fakepath,0777);
 	}
 	if(fdir != NULL){
 		free(fdir);

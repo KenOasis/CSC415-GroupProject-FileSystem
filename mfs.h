@@ -71,6 +71,7 @@ typedef struct{
 
 struct fs_diriteminfo
 	{
+		unsigned short d_reclen;    /* length of this record Not used */
     unsigned char file_type;    
     char d_name[256]; 			/* filename max filename is 255 characters */
 	};
@@ -117,14 +118,17 @@ struct fs_stat
 	time_t    st_modtime;   	/* time of last modification */
 	time_t    st_createtime;   	/* time of last status change */
 	int       access_mode;      /* access mode */
-	/* add additional attributes here for your file system */
+	/* add additional attributes here for your file system */ 
 	};
 
 int fs_stat(const char *path, struct fs_stat *buf);
 
+uint32_t find_free_dir_ent(fs_directory *directory);
 int reload_directory(fs_directory *directory);
+int write_direcotry(fs_directory *directory);
 void free_directory(fs_directory* directory);
 uint32_t find_DE_pos(splitDIR *spdir);
+int check_duplicated_dir(uint32_t parent_de_pos, char* name);
 int find_childrens(fdDir *dirp);
 splitDIR* split_dir(const char *name);
 void free_split_dir(splitDIR *spdir);

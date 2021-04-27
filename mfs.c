@@ -55,7 +55,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
             (dir_ents + i)->de_dotdot_inode = 1;
         }else{
             strcpy((dir_ents + i)->de_name, "uninitialized");
-            (dir_ents + i)->de_dotdot_inode = UINT_MAX;
+            (dir_ents + i)->de_dotdot_inode = UINT32_MAX;
         }
         (dir_ents + i)->de_inode = i;
     }
@@ -84,7 +84,35 @@ uint64_t fs_init(/*freeSpace * vector*/){
 }
 
 int fs_mkdir(const char *pathname, mode_t mode){
-    return 0;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+    LBAread(directory, 1, fs_DIR.LBA_root_directory);
+    reload_directory(directory);
+    uint32_t free_dir_ent = find_free_dir_ent(directory);
+    splitDIR *spdir = split_dir(pathname);
+    char *new_dir_name = malloc(sizeof(char)*32);
+    strcpy(new_dir_name, *(spdir->dir_names + spdir->length - 1));
+    spdir->length--; // move up 1 level to cwd
+    uint32_t parent_pos = find_DE_pos(spdir);
+    int duplicated_name = check_duplicated_dir(parent_pos, new_dir_name);
+    if(parent_pos != UINT32_MAX){
+        if(duplicated_name){
+            printf("mkdir: %s: File exists\n", new_dir_name);
+            free_directory(directory);
+            return 0;
+        }else{
+            fs_de *de = (directory->d_dir_ents + free_dir_ent);
+            de->de_dotdot_inode = parent_pos;
+            fs_inode *inode = (directory->d_inodes + free_dir_ent);// inode is not change if it is directory (but not file)
+            strcpy(de->de_name, new_dir_name);
+            write_direcotry(directory);
+            free_directory(directory);
+            return 1;
+        }
+    }else{
+        printf("mkdir: %s: No such file or directory\n", pathname);
+        free_directory(directory);
+        return 0;
+    }
 }
 
 int fs_rmdir(const char *pathname){
@@ -154,6 +182,22 @@ int fs_delete(char* filename){
 }	//removes a file
 
 //Helper
+uint32_t find_free_dir_ent(fs_directory* directory){
+    uint32_t free_dir_ent = 0;
+    for(int i = 0; i < directory->d_num_DEs; ++i){
+        if((directory->d_dir_ents + i)->de_dotdot_inode == UINT32_MAX){
+            free_dir_ent = i;
+            break;
+        }
+    }
+    if(free_dir_ent == 0){
+        /**To-Do**
+         * extend more directory entries and more inodes, then get the new available space
+         */
+        return free_dir_ent;
+    }
+    return free_dir_ent;
+}
 int reload_directory(fs_directory * directory){
     //reload Dir_info from Disk(LBA)
     directory->d_inodes = malloc(MINBLOCKSIZE * (directory->d_inode_blocks));
@@ -168,6 +212,14 @@ void free_directory(fs_directory *directory){
     free(directory->d_dir_ents);
     free(directory->d_inodes);
     free(directory);
+}
+int write_direcotry(fs_directory *directory){
+    fs_de * dir_ents = directory->d_dir_ents;
+    fs_inode *inodes = directory->d_inodes;
+    LBAwrite(dir_ents, directory->d_de_blocks, directory->d_de_start_location);
+    LBAwrite(inodes, directory->d_inode_blocks, directory->d_inode_start_location);
+    LBAwrite(directory, 1, fs_DIR.LBA_root_directory);
+    return 1;
 }
 uint32_t find_DE_pos(splitDIR *spdir){
     fs_directory* directory = malloc(MINBLOCKSIZE);
@@ -204,6 +256,23 @@ uint32_t find_DE_pos(splitDIR *spdir){
         free_directory(directory);
         return UINT32_MAX;
     }
+}
+
+int check_duplicated_dir(uint32_t parent_de_pos, char* name){// if return value = 0, means no duplicated
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+	LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	reload_directory(directory);
+    for(int i = 1; i < directory->d_num_DEs; ++i){
+        uint32_t current_parent = (directory->d_dir_ents + i)->de_dotdot_inode;
+       
+        int not_same_name = strcmp(name, (directory->d_dir_ents + i)->de_name);
+        if((current_parent == parent_de_pos) && (!not_same_name)){
+            free_directory(directory);
+            return 1;
+        }
+    }
+    free_directory(directory);
+    return 0;
 }
 
 int find_childrens(fdDir *dirp){
