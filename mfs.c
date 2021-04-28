@@ -89,7 +89,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
     reload_directory(directory);
     uint32_t free_dir_ent = find_free_dir_ent(directory);
     splitDIR *spdir = split_dir(pathname);
-    char *new_dir_name = malloc(sizeof(char)*32);
+    char *new_dir_name = malloc(sizeof(char)*256);
     strcpy(new_dir_name, *(spdir->dir_names + spdir->length - 1));
     spdir->length--; // move up 1 level to cwd
     uint32_t parent_pos = find_DE_pos(spdir);
@@ -201,12 +201,18 @@ int fs_closedir(fdDir *dirp){
 }
 
 char * fs_getcwd(char *buf, size_t size){
-   return 0;
+   char *cwd = NULL;
+   if(buf != NULL){
+    char *cwd = malloc(sizeof(char)*(size + 1));
+    strcpy(cwd, fs_DIR.cwd);
+    strcpy(buf, fs_DIR.cwd);
+   }
+   return cwd;
 }
 
 int fs_setcwd(char *buf){
-
-   return 0;
+    strcpy(fs_DIR.cwd, buf);
+   return 1;
 }
 
 int fs_isFile(char * path){
@@ -250,6 +256,29 @@ int fs_isDir(char * path){
 int fs_delete(char* filename){
     return 0;
 }	//removes a file
+
+int fs_stat(const char *path, struct fs_stat *buf){
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+    LBAread(directory, 1, fs_DIR.LBA_root_directory);
+    reload_directory(directory);
+    char *cwd = malloc(sizeof(char)*4097);
+    fs_getcwd(cwd, 4097);
+    char *full_path = malloc(sizeof(char)*4097);
+    full_path = strcat(cwd,path);
+    splitDIR *spdir = split_dir(full_path);
+    uint32_t de_pos = find_DE_pos(spdir);
+    uint32_t inode_pos =(directory->d_dir_ents + de_pos)->de_inode;
+    fs_inode *inode = (directory->d_inodes + inode_pos);
+    buf->st_size = inode->fs_size;
+    buf->st_blksize = inode->fs_blocks;
+    buf->st_blocks = inode->fs_blocks;
+    buf->st_accesstime = inode->fs_accesstime;
+    buf->st_modtime = inode->fs_modtime;
+    buf->st_createtime = inode->fs_createtime;
+    buf->st_accessmode = inode->fs_accessmode;
+
+    return 0;
+}
 
 //Helper
 uint32_t find_free_dir_ent(fs_directory* directory){
@@ -394,7 +423,7 @@ splitDIR* split_dir(const char *name){
     sDir->dir_names = (char**)malloc(sizeof(char *) * length);
     sDir->length = length;
     for(int i = 0; i < length; ++i){
-        *(sDir->dir_names + i) = malloc(sizeof(char) * 64);
+        *(sDir->dir_names + i) = malloc(sizeof(char) * 256);
     }
     // remember to free outside the function
     strcpy(pathname, name);

@@ -23,6 +23,7 @@
 #include "b_io.h"
 //#include "freeSpace.h"
 #include "fsLow.h"
+#include "string.h"
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR
@@ -87,8 +88,11 @@ typedef struct
 	} fdDir;
 
 typedef struct{
+	 char cwd[4096];
 	 uint64_t LBA_root_directory;
 }DirInfo;
+
+
 
 typedef struct{
 	int length;
@@ -117,7 +121,7 @@ struct fs_stat
 	time_t    st_accesstime;   	/* time of last access */
 	time_t    st_modtime;   	/* time of last modification */
 	time_t    st_createtime;   	/* time of last status change */
-	int       access_mode;      /* access mode */
+	int       st_accessmode;      /* access mode */
 	/* add additional attributes here for your file system */ 
 	};
 
@@ -135,8 +139,7 @@ void free_split_dir(splitDIR *spdir);
 void display_time(time_t t); // helper to display formatted time 
 void print_accessmode(int access_mode, int file_type); // helper to display accessmod as "drwxrwxrwx" form
 
-
-
 DirInfo fs_DIR;
+
 // remember to free the pointer at end of main
 #endif

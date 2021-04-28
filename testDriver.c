@@ -37,7 +37,7 @@ int main (int argc, char *argv[])
 	retVal = startPartitionSystem (filename, &volumeSize, &blockSize);	
 	printf("Opened %s, Volume Size: %llu;  BlockSize: %llu; Return %d\n", filename, (ull_t)volumeSize, (ull_t)blockSize, retVal);
 
-	vcb *v0 = bootVCB(blockSize*10, blockSize);
+	vcb *v0 = bootVCB(blockSize*10240, blockSize);
 	printf("magic number is:%x\n", v0->magic_number);
 	fs_directory* directory = malloc(blockSize);
 	LBAread(directory, 1, v0->LBA_root_directory);
@@ -57,7 +57,9 @@ int main (int argc, char *argv[])
 		char *origpath = malloc(sizeof(char) * 128);
 		strcpy(origpath, name);
 		newpath = strcat(origpath,"Another file");
-		fs_rmdir(newpath);
+		struct fs_stat *buf = malloc(sizeof(struct fs_stat));
+		fs_stat("Jimmy", buf);
+		printf(" Jimmy size is %lld\n", buf->st_size);
 	}	
 	if(fdir != NULL){
 		free(fdir);

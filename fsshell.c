@@ -23,6 +23,9 @@
 #include <getopt.h>
 #include <string.h>
 
+#include "fsLow.h"
+#include "vcb.h"
+#include "freeSpace.h"
 #include "mfs.h"
 
 /***************  START LINUX TESTING CODE FOR SHELL ***************/
@@ -693,7 +696,16 @@ int main (int argc, char * argv[])
 	char * cmdin;
 	char * cmd;
 	HIST_ENTRY *he;
+	
+	char * filename = "VolumeZero";
+	uint64_t volumeSize = 10000000;
+	uint64_t blockSize = BLOCKSIZE;
+  int retVal;
 		
+	retVal = startPartitionSystem (filename, &volumeSize, &blockSize);	
+	printf("Opened %s, Volume Size: %llu;  BlockSize: %llu; Return %d\n", filename, (ull_t)volumeSize, (ull_t)blockSize, retVal);
+	vcb *v0 = bootVCB(blockSize*10240, blockSize);
+
 	using_history();
 	stifle_history(200);	//max history entries
 	
