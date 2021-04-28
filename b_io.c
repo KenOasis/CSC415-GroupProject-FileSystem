@@ -28,16 +28,89 @@
 
 typedef struct b_fcb
 	{
-	int systemFd;	//holds the systems file descriptor
+	int systemFd;	//holds the systems file descriptor - the LBA of the first block
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
-	bool writeBufferNonEmpty;	// track if we need to flush write buffer 
+	bool writeBufferNonEmpty;	// track if we need to flush write buffer
+	int blockInDisk	// the cursor that tracks where we are
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
 
 int startup = 0;	//Indicates that this has not been initialized
+
+
+
+
+// Interface to write a buffer	
+int b_write (int fd, char * buffer, int count)
+	{
+	int bytesWrite;				// how many bytes written to the file, there can be some left in the buffer
+	int bytesNeededToFull;		// how many bytes are left in my buffer to fill up the buffer
+	int pointer;				// how many bytes have been processed in the call's buffer
+	int loadToBuffer;			// how many bytes is going to be load to buffer
+
+	if (startup == 0) b_init();  //Initialize our system
+
+	// check that fd is between 0 and (MAXFCBS-1)
+	if ((fd < 0) || (fd >= MAXFCBS))
+		{
+		return (-1); 					//invalid file descriptor
+		}
+		
+	if (fcbArray[fd].systemFd == -1)		//File not open for this descriptor
+		{
+		return -1;
+		}	
+
+	// Initialize the pointer pointing to the first byte in caller's buffer
+	pointer = 0;
+	
+	// Writing to the file from caller's buffer until reaching the end
+	while (count > 0) {
+		// number of bytes needed to fill the buffer
+		bytesNeededToFull = MINBLOCKSIZE - fcbArray[fd].buflen;
+		
+		// get the number of bytes going to be load to the buffer from caller's buffer
+		// it's min(count, bytesNeededToFull)
+		if (count < bytesNeededToFull) {
+			loadToBuffer = count;		// when the buffer will not be filled up
+		} else {
+			loadToBuffer = bytesNeededToFull;		// when the buffer will be filled up, then we can write
+		}
+
+		// load bytes to buffer from caller's buffer
+		memcpy (fcbArray[fd].buf + fcbArray[fd].buflen, buffer + pointer, loadToBuffer);
+
+		// update pointer - skipping those we have loaded and pointing to the next byte to load
+		pointer += loadToBuffer;
+
+		// update total remaining bytes need to load
+		count -= loadToBuffer;
+
+		// update existing bytes in the buffer
+		fcbArray[fd].buflen += loadToBuffer;
+
+		// write bytes from buffer to the file ONLY when the buffer is full
+		if (fcbArray[fd].buflen == MINBLOCKSIZE) {
+			freespace = //
+			fcbArray[fd].blockInDisk = findMultipleBlocks(1, freespace);
+			LBAwrite(fcbArray[fd].buf, fcbArray[fd].buflen, fcbArray[fd].systemFd + fcbArray[fd].blockInDisk);
+			bytesWrite += fcbArray[fd].buflen;
+			fcbArray[fd].buflen = 0;
+			fcbArray[fd].blockInDisk += 1;	// Move the block in disk to the next
+		}
+	}
+
+	// Update indicator to indicate that the write buffer is holding some bytes that haven't been written
+	if (fcbArray[fd].buflen != 0) {
+		fcbArray[fd].writeBufferNonEmpty = true;
+	}
+
+	return pointer;
+	}
+
 
 
 // Interface to read a buffer
@@ -118,14 +191,16 @@ int b_read (int fd, char * buffer, int count)
 		
 	if (part2 > 0) 	//blocks to copy direct to callers buffer
 		{
-		bytesRead = LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].systemFd);
+		bytesRead = LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].systemFd + fcbArray[fd].blockInDisk);
 		part2 = bytesRead;  //might be less if we hit the end of the file
+		fcbArray[fd].blockInDisk += numberOfBlocksToCopy; //
 		}
 		
 	if (part3 > 0)	//We need to refill our buffer to copy more bytes to user
 		{		
 		//try to read MINBLOCKSIZE bytes into our buffer
-		bytesRead = LBAread (fcbArray[fd].buf, MINBLOCKSIZE, fcbArray[fd].systemFd);
+		bytesRead = LBAread (fcbArray[fd].buf, MINBLOCKSIZE, fcbArray[fd].systemFd + fcbArray[fd].blockInDisk);
+		fcbArray[fd].blockInDisk += 1;	//Move to the next block
 		
 		// we just did a read into our buffer - reset the offset and buffer length.
 		fcbArray[fd].index = 0;
