@@ -25,15 +25,17 @@ int initializeVCB(uint64_t volumesize, uint64_t blocksize) {
 };
 
 vcb* bootVCB(uint64_t volumesize, uint64_t blocksize){
+    vcb *vtemp = malloc(MINBLOCKSIZE);
     vcb *v0 = malloc(MINBLOCKSIZE);
-	LBAread(v0, 1, 1);
-	if(v0->magic_number != 0x12345678){
+	LBAread(vtemp, 1, 1);
+	if(vtemp->magic_number != 0x12345678){
 		printf("Initializing VCB......\n");
-		free(v0);
 		initializeVCB(BLOCKSIZE*10, BLOCKSIZE);
-		LBAread(v0, 1, 1);
 	}
+    LBAread(v0, 1, 1);
     strcpy(fs_DIR.cwd,"root/Users/");
     fs_DIR.LBA_root_directory = v0->LBA_root_directory;
+    free(vtemp);
+    vtemp = NULL;
     return v0;
 }
