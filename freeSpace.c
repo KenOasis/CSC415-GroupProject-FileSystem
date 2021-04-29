@@ -88,7 +88,7 @@ u_int64_t expandFreeSection(int index, freeSpace* vector) {
 	return freeIndex;
 }
 
-int main() {
+/*int main() {
 	freeSpace* space = init_freeSpace(500, 512);
 	u_int64_t blockLocation = findMultipleBlocks(5, space);
 	u_int64_t blockLocationTwo = findMultipleBlocks(2, space);
@@ -101,7 +101,9 @@ int main() {
 	printf("Free block location: %lu, Second: %lu\n", blockLocation, blockLocationTwo);
 	//printf("SIZE WITHOUT VECTOR: %lu\n", space->LBABitVector);
 	return 0;
-}
+}*/
+
+
 /*u_int64_t findFreeBlock(freeSpace* vector) {
 	int freeIndex = vector->nextFreeIndex + vector->nextFreePosition * 32; //the bit number that is free, aka the next free block
 	vector->bitVector[vector->nextFreePosition] |= 1 << vector->nextFreeIndex; //sets bit to 1 for future reference

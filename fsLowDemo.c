@@ -25,6 +25,7 @@
 #include <time.h>
 #include "fsLow.h"
 #include "mfs.h"
+#include "freeSpace.h"
 
 int main (int argc, char *argv[])
 	{	
@@ -54,7 +55,17 @@ int main (int argc, char *argv[])
 		}
 	else
 		printf("FAILURE on Write/Read\n");
-		
+	
+	freeSpace* space = init_freeSpace(500, 512);
+	u_int64_t blockLocation = findMultipleBlocks(5, space);
+	u_int64_t blockLocationTwo = findMultipleBlocks(2, space);
+	freeSomeBits(4, 5, space);
+	blockLocation = findMultipleBlocks(5, space);
+	freeSomeBits(30, 2, space);
+	for (int n = 0; n < space->size; n++) {
+		printf("Integer %d: %d\n", n, space->bitVector[n]);
+	}
+	printf("Free block location: %lu, Second: %lu\n", blockLocation, blockLocationTwo);
 	free (buf);
 	free(buf2);
 	closePartitionSystem();
