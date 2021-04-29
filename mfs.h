@@ -122,6 +122,7 @@ struct fs_stat
 	time_t    st_modtime;   	/* time of last modification */
 	time_t    st_createtime;   	/* time of last status change */
 	int       st_accessmode;      /* access mode */
+	uint64_t  st_file_address; /* LBA address of file */
 	/* add additional attributes here for your file system */ 
 	};
 

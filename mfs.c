@@ -296,7 +296,7 @@ int fs_stat(const char *path, struct fs_stat *buf){
     buf->st_modtime = inode->fs_modtime;
     buf->st_createtime = inode->fs_createtime;
     buf->st_accessmode = inode->fs_accessmode;
-
+    buf->st_file_address = inode->fs_address;
     free_directory(directory);
     free(path_buf);
     free_split_dir(spdir);
