@@ -25,7 +25,7 @@
 #include "b_io.h"
 #include "freeSpace.h"
 #include "fsLow.h"
-#include "fs_dir.h"
+#include "dir.h"
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR
 #define FT_LINK	DT_LNK
@@ -73,7 +73,7 @@ typedef struct fs_de fs_de;
 
 struct fs_diriteminfo
 	{
-		unsigned short d_reclen;    /* length of this record Not used */
+		unsigned short d_reclen;    /* length of this record */
     unsigned char file_type;    
     char d_name[256]; 			/* filename max filename is 255 characters */
 	};
@@ -82,7 +82,9 @@ struct fs_diriteminfo
 struct fdDir
 	{
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
-	uint32_t	de_pos;	/*which directory entry position, like file pos */
+	unsigned short d_reclen;    /* length of this record */
+	unsigned short dirEntryPosition; /* */
+	uint32_t	de_pos;	/* which directory entry position, like file pos */
 	uint32_t cur_pos;
 	uint32_t num_children;
 	fs_de **childrens;

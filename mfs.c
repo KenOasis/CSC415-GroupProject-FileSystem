@@ -3,11 +3,7 @@
 #include "fsLow.h"
 #include "mfs.h"
 #include "vcb.h"
-#include "fs_dir.h"
-// void __attribute__ ((constructor)) premain()
-// {   // THIS IS JUST FOR TEST 
-//        fs_init(&fdDIR);
-// }
+#include "dir.h"
 // int main(int argc, char * argv[]){
 //        printf("LBA is %llu\n", fdDIR.directoryStartLocation);
 //        return 0;
