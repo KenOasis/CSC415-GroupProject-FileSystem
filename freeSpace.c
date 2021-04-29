@@ -1,7 +1,7 @@
 #include "freeSpace.h"
 
 freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
-	freeSpace *vector = malloc(sizeof(freeSpace));
+	freeSpace *vector = malloc(512);
 	vector->LBABitVector = ((sizeof(freeSpace) + 511) / 512) + 2; //size of freeSpace struct without the array
 	int integers = (totalBlocks + 31) / 32; //how many integers in the int array
 	//printf("integers needed: %d\n", integers);
