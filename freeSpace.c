@@ -12,6 +12,7 @@ freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
 	vector->blocksNeeded = (integers + 127) / 128;
 	vector->blocksNeeded += vector->LBABitVector;
 	vector->bitVector = malloc(sizeof(int) * integers);
+	vector->structSize = 512; //size of freeSpace guaranteed to be less than 1 block
         for (int b = 0; b < integers; b++) {
                 vector->bitVector[b] = 0; //sets all of the free space array to 0
         }

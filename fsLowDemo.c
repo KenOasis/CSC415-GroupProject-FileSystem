@@ -70,19 +70,23 @@ int main (int argc, char *argv[])
 	}
 	printf("Free block location: %lu, Second: %lu\n", blockLocation, blockLocationTwo);
 	LBAwrite(space, 1, 2);
-	LBAwrite(space->bitVector, space->size / 128, space->LBABitVector);
-	freeSpace* spaceCopy = malloc(sizeof(freeSpace));
+	LBAwrite(space->bitVector, (space->size + 127) / 128, space->LBABitVector);
+	printf("size of freespace: %ld\n", sizeof(freeSpace));
+	freeSpace* spaceCopy = malloc(512);
 	LBAread(spaceCopy, 1, 2);
 	printf("BlocksNeeded: %d\n", spaceCopy->blocksNeeded);
 	printf("Array int size: %d\n", spaceCopy->size);
-	spaceCopy->bitVector = malloc(sizeof(int) * 300);
-	/*
-	LBAread(spaceCopy->bitVector, spaceCopy->size / 128, space->LBABitVector);
+	spaceCopy->bitVector = malloc(sizeof(int) * spaceCopy->size);
+	LBAread(spaceCopy->bitVector, (spaceCopy->size + 127) / 128, space->LBABitVector);
 	for (int n = 0; n < spaceCopy->size; n++) {
 		printf("Integer %d: %d\n", n, spaceCopy->bitVector[n]);
-	}*/
+	}
 	free (buf);
 	free(buf2);
+	free(space->bitVector);
+	free(space);
+	free(spaceCopy->bitVector);
+	free(spaceCopy);
 	closePartitionSystem();
 	return 0;	
 	}

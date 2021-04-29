@@ -12,6 +12,7 @@ typedef struct  {
 	int size;
 	uint64_t LBABitVector; //LBA location of bit vector
 	int blocksNeeded;
+	int structSize;
 } freeSpace;
 
 freeSpace* init_freeSpace(int totalBlocks, int bytesPerBlock);
