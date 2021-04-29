@@ -5,11 +5,12 @@ freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
 	vector->LBABitVector = ((sizeof(freeSpace) + 511) / 512) + 2; //size of freeSpace struct without the array
 	int integers = (totalBlocks + 31) / 32; //how many integers in the int array
 	//printf("integers needed: %d\n", integers);
-	int blocksNeeded = ((integers * 32) + BytesPerBlock * 8 - 1) / (BytesPerBlock * 8); //amount of BITS needed for free space bit vector
+	int blocksNeeded = ((integers * 32) + BytesPerBlock * 8 - 1) / (BytesPerBlock * 8); //amount of blocks needed for free space bit vector
 	blocksNeeded += vector->LBABitVector; //add VCB needed block, and freeSpace struct needed blocks
 	//printf("blocks needed: %d\n", blocksNeeded);
 	vector->size = integers; //length of the bit vector for printing or iterating
-	vector->blocksNeeded = (integers + 15) / 16;
+	vector->blocksNeeded = (integers + 127) / 128;
+	vector->blocksNeeded += vector->LBABitVector;
 	vector->bitVector = malloc(sizeof(int) * integers);
         for (int b = 0; b < integers; b++) {
                 vector->bitVector[b] = 0; //sets all of the free space array to 0
@@ -64,7 +65,8 @@ u_int64_t findMultipleBlocks(int blockCount, freeSpace* vector) {
 		}
 	}
 	//printf("free block NOT found: %d\n", freeIndex);
-	return freeIndex; 								//bits were not found, return -1 to indicate error
+	freeIndex = 0;
+	return freeIndex; 								//bits were not found, return 0 to indicate error
 }
 
 void freeSomeBits(int startIndex, int count, freeSpace* vector) {
@@ -82,10 +84,9 @@ void freeSomeBits(int startIndex, int count, freeSpace* vector) {
 	}
 }
 
-u_int64_t expandFreeSection(int index, freeSpace* vector) {
-	int freeIndex = index;
-	int expandAmount = 0;
-	return freeIndex;
+u_int64_t expandFreeSection(int fileLocation, int fileSize, int newSize, freeSpace* vector) {
+	freeSomeBits(fileLocation, fileSize, vector);
+	return findMultipleBlocks(newSize, vector);
 }
 
 /*int main() {
