@@ -1,3 +1,5 @@
+#ifndef _VCB_H
+#define _VCB_H
 #include "freeSpace.h"
 typedef struct vcb {
     int number_of_blocks;  // number of blocks in volume
@@ -20,3 +22,5 @@ typedef struct vcb {
  */
 int initializeVCB(uint64_t volumesize, uint64_t blocksize);
 vcb* bootVCB(uint64_t volumesize, uint64_t blocksize);
+
+#endif

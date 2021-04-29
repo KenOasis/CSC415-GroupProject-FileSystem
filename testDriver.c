@@ -27,6 +27,7 @@
 #include "mfs.h"
 #include "freeSpace.h"
 #include "vcb.h"
+#include "fs_dir.h"
 int main (int argc, char *argv[])
 	{	
 	char * filename = "VolumeZero";
