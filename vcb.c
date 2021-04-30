@@ -34,7 +34,7 @@ vcb* bootVCB(uint64_t volumesize, uint64_t blocksize){
 		initializeVCB(BLOCKSIZE*10, BLOCKSIZE);
 	}
     LBAread(v0, 1, 1);
-    strcpy(fs_DIR.cwd,"root/Users/");
+    strcpy(fs_DIR.cwd,"root/Users");
     fs_DIR.LBA_root_directory = v0->LBA_root_directory;
     free(vtemp);
     vtemp = NULL;

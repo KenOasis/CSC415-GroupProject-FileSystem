@@ -27,6 +27,7 @@
 #include "vcb.h"
 #include "freeSpace.h"
 #include "mfs.h"
+#include "dir.h"
 
 /***************  START LINUX TESTING CODE FOR SHELL ***************/
 #define TEMP_LINUX 0  //MUST be ZERO for working with your file system
@@ -112,12 +113,12 @@
 #define CMDLS_ON	1
 #define CMDCP_ON	0
 #define CMDMV_ON	0
-#define CMDMD_ON	0
-#define CMDRM_ON	0
+#define CMDMD_ON	1
+#define CMDRM_ON	1
 #define CMDCP2L_ON	0
 #define CMDCP2FS_ON	0
-#define CMDCD_ON	0
-#define CMDPWD_ON	0
+#define CMDCD_ON	1
+#define CMDPWD_ON	1
 
 
 typedef struct dispatch_t
@@ -162,10 +163,8 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 #if (CMDLS_ON == 1)				
 	if (dirp == NULL)	//get out if error
 		return (-1);
-	
 	struct fs_diriteminfo * di;
 	struct fs_stat statbuf;
-	
 	di = fs_readdir (dirp);
 	printf("\n");
 	while (di != NULL) 
@@ -175,7 +174,7 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 			if (fllong)
 				{
 				fs_stat (di->d_name, &statbuf);
-				printf ("%s    %9ld   %s\n", fs_isDir(di->d_name)?"D":"-", statbuf.st_size, di->d_name);
+				printf ("%s    %9lld   %s\n", fs_isDir(di->d_name)?"D":"-", statbuf.st_size, di->d_name);
 				}
 			else
 				{
@@ -195,6 +194,7 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 ****************************************************/
 int cmd_ls (int argcnt, char *argvec[])
 	{
+
 #if (CMDLS_ON == 1)				
 	int option_index;
 	int c;
@@ -232,10 +232,8 @@ int cmd_ls (int argcnt, char *argvec[])
 		{	
 		c = getopt_long(argcnt, argvec, "alh",
 				long_options, &option_index);
-				
 		if (c == -1)
 		   break;
-
 		switch (c) {
 			case 0:			//flag was set, ignore
 			   printf("Unknown option %s", long_options[option_index].name);
@@ -259,8 +257,6 @@ int cmd_ls (int argcnt, char *argvec[])
 				break;
 			}
 		}
-	
-	
 	if (optind < argcnt)
 		{
 		//processing arguments after options
@@ -705,7 +701,8 @@ int main (int argc, char * argv[])
 	retVal = startPartitionSystem (filename, &volumeSize, &blockSize);	
 	printf("Opened %s, Volume Size: %llu;  BlockSize: %llu; Return %d\n", filename, (ull_t)volumeSize, (ull_t)blockSize, retVal);
 	vcb *v0 = bootVCB(blockSize*10240, blockSize);
-
+		/*Test*/
+	
 	using_history();
 	stifle_history(200);	//max history entries
 	
@@ -715,8 +712,8 @@ int main (int argc, char * argv[])
 #ifdef COMMAND_DEBUG
 		printf ("%s\n", cmdin);
 #endif
-		
 		cmd = malloc (strlen(cmdin) + 30);
+		
 		strcpy (cmd, cmdin);
 		free (cmdin);
 		cmdin = NULL;
@@ -738,9 +735,10 @@ int main (int argc, char * argv[])
 				}
 			processcommand (cmd);
 			}
-				
 		free (cmd);
 		cmd = NULL;
-		closePartitionSystem();
 		} // end while
+		free(v0);
+		v0 = NULL;
+		closePartitionSystem();
 	}

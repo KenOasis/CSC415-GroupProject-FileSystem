@@ -64,7 +64,7 @@ int main (int argc, char *argv[])
 		printf(" Jimmy size is %lld\n", buf->st_size);
 	}	
 	if(fdir != NULL){
-		free(fdir);
+		fs_closedir(fdir);
 	}
 	free_directory(directory);
 	closePartitionSystem();

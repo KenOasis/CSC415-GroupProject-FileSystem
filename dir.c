@@ -2,7 +2,16 @@
 #include "fsLow.h"
 #include "dir.h"
 #include "mfs.h"
-//Helper
+
+/****************************************************
+* @parameters 
+*   @type fs_directory*: directory 
+* @return
+*   @type uint_32: a number represent the position
+*                  of the directory entry
+* This function return the position of the next free
+* directory entry.
+****************************************************/
 uint32_t find_free_dir_ent(fs_directory* directory){
     uint32_t free_dir_ent = 0;
     for(int i = 0; i < directory->d_num_DEs; ++i){
@@ -19,21 +28,40 @@ uint32_t find_free_dir_ent(fs_directory* directory){
     }
     return free_dir_ent;
 }
+/****************************************************
+* @parameters 
+*   @type fs_directory*: directory
+* @return
+*   @type int: 0 is success, 1 is fail
+* This function reload the directory from LBA space
+****************************************************/
 int reload_directory(fs_directory * directory){
-    //reload Dir_info from Disk(LBA)
     directory->d_inodes = malloc(MINBLOCKSIZE * (directory->d_inode_blocks));
     directory->d_dir_ents = malloc(MINBLOCKSIZE * (directory->d_de_blocks));
     LBAread(directory->d_inodes, directory->d_inode_blocks, directory->d_inode_start_location);
     LBAread(directory->d_dir_ents, directory->d_de_blocks, directory->d_de_start_location);
-    //End of reload Dir_info
     return 0;
 }
-// @return value: UINT32_MAX means failed to find pos.
+/****************************************************
+* @parameters 
+*   @type fs_directory*: directory
+* @return
+*   @void
+*  Destructor of the directory to free the memory
+*  of the struct type directory
+****************************************************/
 void free_directory(fs_directory *directory){
     free(directory->d_dir_ents);
     free(directory->d_inodes);
     free(directory);
 }
+/****************************************************
+* @parameters 
+*   @type fs_directory*: directory
+* @return
+*   @type int: 0 is success, 1 is fail
+* This function write directory back to LBA
+****************************************************/
 int write_direcotry(fs_directory *directory){
     fs_de * dir_ents = directory->d_dir_ents;
     fs_inode *inodes = directory->d_inodes;
@@ -44,6 +72,16 @@ int write_direcotry(fs_directory *directory){
     inodes = NULL;
     return 0;
 }
+/****************************************************
+* @parameters 
+*   @type splitDIR*: a struct hold splited path info
+* @return
+*   @type uint_32: a number represent the position
+*                  of the directory entry, If it equal
+                   UINT32_MAX, it means fail
+* This function return the position of the directory
+* entry. 
+****************************************************/
 uint32_t find_DE_pos(splitDIR *spdir){
     uint32_t de_pos = UINT32_MAX;
     fs_directory* directory = malloc(MINBLOCKSIZE);
@@ -71,14 +109,23 @@ uint32_t find_DE_pos(splitDIR *spdir){
     }
     if(found_dir_count == spdir->length){
         de_pos = pos;
-
     }
     free(directory);
     directory = NULL;
     return de_pos;
 }
 
-int check_duplicated_dir(uint32_t parent_de_pos, char* name){// if return value = 0, means no duplicated
+/****************************************************
+* @parameters 
+*   @type uint32_t: position of the parent directory
+*                   entry
+*   @type char*: name of the new directory (to be addded)
+* @return
+*   @type int: 1 is duplicate, 0 is not
+* This function check whether the new dir has duplicated
+* name in the parent directory
+****************************************************/
+int is_duplicated_dir(uint32_t parent_de_pos, char* name){// if return value = 0, means no duplicated
     int is_duplicated = 0;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
@@ -97,7 +144,15 @@ int check_duplicated_dir(uint32_t parent_de_pos, char* name){// if return value 
     directory = NULL;
     return is_duplicated;
 }
-
+/****************************************************
+* @parameters 
+*   @type fdDir*: pointer to the type fdDir
+* @return
+*   @type int: 0 is success, 1 is fail
+* This function find the children of the given
+* directory entry, fdDip will store the pointers to 
+* the children.
+****************************************************/
 int find_childrens(fdDir *dirp){
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
@@ -113,9 +168,7 @@ int find_childrens(fdDir *dirp){
     }
     dirp->num_children = count_children;
     dirp->childrens = (fs_de**)malloc(sizeof(fs_de*) * count_children);
-    for(int i = 0; i < count_children; ++i){
-        *(dirp->childrens + i) = (fs_de*)malloc(sizeof(fs_de));
-    }
+
     int pos = 0;
     for(int i = 1; i < directory->d_num_DEs; ++i){
         fs_de *current_dir_ent = (directory->d_dir_ents + i);
@@ -133,6 +186,15 @@ int find_childrens(fdDir *dirp){
     directory = NULL;
     return 0;
 }
+/****************************************************
+* @parameters 
+*   @type const char*: path to be splited 
+* @return
+*   @type splitDIR*: a pointer point to a struct splitDIR
+*                    which hold the splited path
+* This function split the given path into seperate names
+* of each level of directory/file
+****************************************************/
 splitDIR* split_dir(const char *name){
     // restart here! add . and .. into childrens
     const char delimiter[2] = "/";
@@ -165,6 +227,14 @@ splitDIR* split_dir(const char *name){
     pathname = NULL;
     return sDir;    
 }
+/****************************************************
+* @parameters 
+*   @type splitDIR*: the splited path info
+* @return
+*   @type void
+* This destructor to free the allocated memory of 
+* strut type splitDIR
+****************************************************/
 
 void free_split_dir(splitDIR *spdir){
     for(int i = 0; i < spdir->length; ++i){
@@ -172,6 +242,10 @@ void free_split_dir(splitDIR *spdir){
     }
     free(spdir);
 }
+
+/****************************************************
+*  helper function to format time output, test only
+****************************************************/
 void display_time(time_t t){
     
     if (t == -1) {
@@ -204,7 +278,9 @@ void display_time(time_t t){
     printf("%s %02d %02d:%02d\n", month_str[ptm->tm_mon],ptm->tm_mday, ptm->tm_hour, 
            ptm->tm_min);
 }
-
+/****************************************************
+*  helper function to format accessmode output, test only
+****************************************************/
 void print_accessmode(int access_mode, int file_type){    char access_mode_str[11] = "----------";
     if(file_type == DT_DIR){
         access_mode_str[0] = 'd';
@@ -242,7 +318,4 @@ void print_accessmode(int access_mode, int file_type){    char access_mode_str[1
         access_mode_str[9] = 'x';
     }
     printf("%s", access_mode_str);
-}
-struct fs_diriteminfo* getDirInfo(){
-    return NULL;
 }
