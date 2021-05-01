@@ -99,7 +99,7 @@ uint64_t fs_init();
 *		@type mode_t: a 3digit oct number represent the 
 *									access mode ie. 0777;
 * @return
-*   @type int: 0 means succes, 1 means fail
+*   @type int: 1 means succes, 0 means fail
 * This function create a new direcotry 
 ****************************************************/
 int fs_mkdir(const char *pathname, mode_t mode);
@@ -109,7 +109,7 @@ int fs_mkdir(const char *pathname, mode_t mode);
 *   @type const char* : the dir name to be removed
 * This function remove a directory (if exist)
 * @return
-*   @type int: 0 means succes, 1 means fail
+*   @type int: 1 means succes, 0 means fail
 * !Need to validte whether is direcotry before execute
 ****************************************************/
 int fs_rmdir(const char *pathname);
@@ -142,7 +142,7 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp);
 * @parameters 
 *   @type fdDir* : the direcotry struct fdDir to close
 * @return
-*   @type int: 0 is success, 1 is fail
+*   @type int: 1 is success, 0 is fail
 * This function is used to close and clean the fdDir
 * object and do something to close the itreation
 ****************************************************/
@@ -163,7 +163,7 @@ char * fs_getcwd(char *buf, size_t size);
 * @parameters 
 *   @type char*: the path info to change cwd
 * @return
-*   @type int : 0 is success, 1 is fail;
+*   @type int : 1 is success, 0 is fail;
 * This function is used to change the current working
 * directory
 ****************************************************/
@@ -225,7 +225,7 @@ struct fs_stat
 *		@type struct fs_stat*: fs_stat struct to hold
 8													file info.
 * @return
-*   @type int: 0 is success, 1 is fail
+*   @type int: 1 is success, 0 is fail
 * This function is used for the ls command to 
 * iterate the info of each file(children)
 ****************************************************/

@@ -108,7 +108,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
 * This function create a new direcotry 
 ****************************************************/
 int fs_mkdir(const char *pathname, mode_t mode){
-    int success_status = 0;
+    int success_status = 1;
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     // construct the full path of the given dir name
@@ -131,7 +131,6 @@ int fs_mkdir(const char *pathname, mode_t mode){
     if(parent_pos != UINT32_MAX){
         if(duplicated_name){
             printf("mkdir: %s: File exists\n", new_dir_name);
-            success_status = -1;
         }else{
             //initial the new direcoty entries info
             fs_de *de = (directory->d_dir_ents + free_dir_ent);
@@ -146,7 +145,6 @@ int fs_mkdir(const char *pathname, mode_t mode){
         }
     }else{
         printf("mkdir: %s: No such file or directory\n", pathname);
-        success_status = -1;
     }
     free(fullpath);
     free_split_dir(spdir);
@@ -166,7 +164,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
 *   @type const char* : the dir name to be removed
 * This function remove a directory (if exist)
 * @return
-*   @type int: 0 means succes, 1 means fail
+*   @type int: 0 means success, 1 means fail
 * !Need to validte whether is direcotry before execute
 ****************************************************/
 int fs_rmdir(const char *pathname){
@@ -174,16 +172,18 @@ int fs_rmdir(const char *pathname){
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *dirname = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    char *filename = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     //construct the fullpath of the give dir name
+    strcpy(filename, pathname);
     strcpy(fullpath, cwd);
     fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, pathname);
+    fullpath = strcat(fullpath, filename);
     // reload directory for LBA
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
     reload_directory(directory);
     //check whether the give name is the Dir type
-    int is_dir = fs_isDir(fullpath);
+    int is_dir = fs_isDir(filename);
     splitDIR *spdir = split_dir(fullpath);
     if(is_dir == 1){
         // find the directory entry position and check wheher it is empty
@@ -300,7 +300,7 @@ int fs_closedir(fdDir *dirp){
     free(dirp);
     dirp->childrens = NULL;
     dirp = NULL;
-    return 1;
+    return 0;
 }
 
 /****************************************************
@@ -330,6 +330,7 @@ char * fs_getcwd(char *buf, size_t size){
 * directory
 ****************************************************/
 int fs_setcwd(char *buf){
+    //To-do finshi relative path
     int is_success = 1;
     char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
     splitDIR *spcwd = split_dir(cwd);
@@ -488,7 +489,32 @@ int fs_isDir(char * path){
 * before calling this function to delete
 ****************************************************/
 int fs_delete(char* filename){
-    return 0;
+    int success_delete = 1;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+	LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	reload_directory(directory);
+    char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
+    char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    strcpy(fullpath, cwd);
+    if(strcmp(fullpath, "root/") != 0)
+    fullpath = strcat(fullpath, "/");
+    fullpath = strcat(fullpath, filename);
+    int is_File = fs_isFile(fullpath);
+    splitDIR *spdir = split_dir(fullpath);
+    if(is_File == 1){
+        uint32_t de_pos = find_DE_pos(spdir);
+        fs_de *de = (directory->d_dir_ents + de_pos);
+        uint32_t inode_pos = de->de_inode;
+        de->de_dotdot_inode = UINT32_MAX;
+        /*to-do free space of the file (inode find address*/
+        write_direcotry(directory);
+        success_delete = 0;
+    }
+    free_directory(directory);
+    free(cwd);
+    free(fullpath);
+    free_split_dir(spdir);
+    return success_delete;
 }	//removes a file
 
 /****************************************************
