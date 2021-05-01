@@ -243,6 +243,27 @@ void free_split_dir(splitDIR *spdir){
     free(spdir);
 }
 
+char *assemble_path(char *buf, int head_offset, int tail_offset){
+    char *temp = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    char *new_cwd = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    strcpy(temp, buf);
+    splitDIR *temp_spbuf = split_dir(temp);
+    for(int i = head_offset; i < (temp_spbuf->length + tail_offset); ++i){
+        if(i < (temp_spbuf->length - 1 + tail_offset)){
+            strcpy(temp, *(temp_spbuf->dir_names + i));
+            temp = strcat(temp,"/");
+        }else{
+            strcpy(temp,(*(temp_spbuf->dir_names + i)));
+        }
+            new_cwd = strcat(new_cwd, temp);
+            strcpy(temp, "");
+    }
+    free(temp);
+    temp = NULL;
+    free_split_dir(temp_spbuf);
+    temp_spbuf = NULL;
+    return new_cwd;
+}
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/

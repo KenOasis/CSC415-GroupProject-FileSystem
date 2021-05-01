@@ -169,6 +169,8 @@ splitDIR* split_dir(const char *name);
 * strut type splitDIR
 ****************************************************/
 void free_split_dir(splitDIR *spdir);
+
+char *assemble_path(char *buf, int head_offset, int tail_offset);
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/

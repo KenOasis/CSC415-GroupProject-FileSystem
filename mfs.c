@@ -181,7 +181,7 @@ int fs_rmdir(const char *pathname){
 
 fdDir * fs_opendir(const char *name){
    splitDIR *spdir = split_dir(name);
-   fdDir *dirp;
+   fdDir *dirp = NULL;
    dirp = malloc(sizeof(fdDir));
    dirp->cur_pos = 0;
    uint32_t de_pos = find_DE_pos(spdir);
@@ -239,91 +239,69 @@ char * fs_getcwd(char *buf, size_t size){
 }
 
 int fs_setcwd(char *buf){
+    int is_success = 1;
     char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
     splitDIR *spcwd = split_dir(cwd);
     splitDIR *spbuf = split_dir(buf);
-    char *temp = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    char *new_cwd = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    splitDIR *spdir = NULL;
+    char *new_path = NULL;
+    char *temp_cwd = NULL;
+    char *new_parent_dir = NULL;
+    char *new_dir_path = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     if(strcmp(buf, ".") == 0){
-        strcpy(new_cwd, cwd);
+        strcpy(new_dir_path, cwd);
     }else if(strcmp(buf, "..") == 0){
         if((spcwd->length) <= 2){
-            strcpy(new_cwd, "root/");
+            strcpy(new_dir_path, "root/");
         }else{
-            for(int i = 0; i < (spcwd->length - 1); ++i){
-                if(i < (spcwd->length - 2)){
-                    strcpy(temp, *(spcwd->dir_names + i));
-                    temp = strcat(temp,"/");
-                }else{
-                    strcpy(temp,(*(spcwd->dir_names + i)));
-                }
-                    new_cwd = strcat(new_cwd, temp);
-                    strcpy(temp, "");
-            }
+            new_path = assemble_path(cwd, 0, -1);
+            strcpy(new_dir_path, new_path);
         }
     }else if((strlen(buf) > 1) && (buf[0] == '.')){
-        strcpy(temp, buf + 1);
-        splitDIR *temp_spbuf = split_dir(temp);
-        for(int i = 0; i < (temp_spbuf->length); ++i){
-                if(i < (temp_spbuf->length - 1)){
-                    strcpy(temp, *(temp_spbuf->dir_names + i));
-                    temp = strcat(temp,"/");
-                }else{
-                    strcpy(temp,(*(temp_spbuf->dir_names + i)));
-                }
-                    new_cwd = strcat(new_cwd, temp);
-                    strcpy(temp, "");
-            }
-        cwd = strcat(cwd, "/");
-        new_cwd = strcat(cwd, new_cwd);
-        free_split_dir(temp_spbuf);
-        temp_spbuf = NULL;
-    }else if(strcmp(buf, "/") == 0){
-        strcpy(new_cwd, "root/");
-    }else if((strlen(buf) > 1) && (buf[0] == '/')){
-        strcpy(temp, buf + 1);
-        splitDIR *temp_spbuf = split_dir(temp);
-        for(int i = 0; i < (temp_spbuf->length); ++i){
-                if(i < (temp_spbuf->length - 1)){
-                    strcpy(temp, *(temp_spbuf->dir_names + i));
-                    temp = strcat(temp,"/");
-                }else{
-                    strcpy(temp,(*(temp_spbuf->dir_names + i)));
-                }
-                    new_cwd = strcat(new_cwd, temp);
-                    strcpy(temp, "");
-            }
-        strcpy(cwd, "root/");
-        new_cwd = strcat(cwd, new_cwd);
-        free_split_dir(temp_spbuf);
-        temp_spbuf = NULL;
-    }else{
-        strcpy(temp, buf);
-        splitDIR *temp_spbuf = split_dir(temp);
-        for(int i = 0; i < (temp_spbuf->length); ++i){
-                if(i < (temp_spbuf->length - 1)){
-                    strcpy(temp, *(temp_spbuf->dir_names + i));
-                    temp = strcat(temp,"/");
-                }else{
-                    strcpy(temp,(*(temp_spbuf->dir_names + i)));
-                }
-                    new_cwd = strcat(new_cwd, temp);
-                    strcpy(temp, "");
-            }
+        new_path = assemble_path(buf + 1, 0, 0);
         if(spcwd->length > 1)
             cwd = strcat(cwd, "/");
-        new_cwd = strcat(cwd, new_cwd);
-        free_split_dir(temp_spbuf);
-        temp_spbuf = NULL;
+        new_dir_path = strcat(cwd, new_path);
+    }else if(strcmp(buf, "/") == 0){
+        strcpy(new_dir_path, "root/");
+    }else if((strlen(buf) > 1) && (buf[0] == '/')){
+        new_path = assemble_path(buf + 1, 0, 0);
+        strcpy(cwd, "root/");
+        new_dir_path = strcat(cwd, new_path);
+    }else{
+        new_path = assemble_path(buf, 0, 0);
+        if(spcwd->length > 1)
+            cwd = strcat(cwd, "/");
+        new_dir_path = strcat(cwd, new_path);
     }
-    /*To-do check the url is exist*/
-    strcpy(fs_DIR.cwd, new_cwd);
+    /*check the url is exist as dir*/
+    temp_cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
+    new_parent_dir = assemble_path(new_dir_path, 0, -1);
+    spdir = split_dir(new_dir_path);
+    strcpy(fs_DIR.cwd, new_parent_dir);
+    if(fs_isDir(*(spdir->dir_names + spdir->length - 1))){
+        strcpy(fs_DIR.cwd, new_dir_path);
+        is_success = 0;
+    }else{
+        strcpy(fs_DIR.cwd, temp_cwd);
+    }
     free_split_dir(spcwd);
-    free(temp);
-    temp = NULL;
-    spcwd = NULL;
+    free_split_dir(spbuf);
+    free_split_dir(spdir);
+    free(new_path);
+    free(temp_cwd);
+    free(new_parent_dir);
+    free(new_dir_path);
+    // free(cwd); //free will cause error????
     cwd = NULL;
-   return 0;
+    spcwd = NULL;
+    spbuf = NULL;
+    spdir = NULL;
+    new_path = NULL;
+    temp_cwd = NULL;
+    new_parent_dir = NULL;
+    new_dir_path = NULL;
+    return is_success;
 }
 
 int fs_isFile(char * path){
@@ -332,7 +310,6 @@ int fs_isFile(char * path){
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     cwd = strcat(cwd,"/");
     fullpath = strcat(cwd, path);
-    printf("%s is full path\n", fullpath);
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
