@@ -31,7 +31,7 @@
 
 typedef struct b_fcb
 	{
-	int systemFd;		// Each file will be assigned an id after b_open
+	int fcbStatus;		// -1 means available, 1 means not available
 	int startingLBA;	//the LBA of the first block
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
@@ -54,7 +54,7 @@ void b_init ()
 	//init fcbArray to all free
 	for (int i = 0; i < MAXFCBS; i++)
 		{
-		fcbArray[i].systemFd = -1; //indicates a free fcbArray
+		fcbArray[i].fcbStatus = -1; //indicates a free fcbArray
 		}
 		
 	startup = 1;
@@ -65,9 +65,9 @@ int b_getFCB ()
 {
 	for (int i = 0; i < MAXFCBS; i++)
 	{
-		if (fcbArray[i].systemFd == -1)
+		if (fcbArray[i].fcbStatus == -1)
 		{
-			fcbArray[i].systemFd = -2; // used but not assigned
+			fcbArray[i].fcbStatus = 1; // used but not assigned
 			return i;		//Not thread safe
 		}
 	}
@@ -75,8 +75,6 @@ int b_getFCB ()
 }
 	
 // Interface to open a buffered file
-// Modification of interface for this assignment, flags match the Linux flags for open
-// O_RDONLY, O_WRONLY, or O_RDWR
 int b_open (char * filename, int flags)
 {
 	int fd;
@@ -84,30 +82,29 @@ int b_open (char * filename, int flags)
 
 	if (startup == 0) b_init();  //Initialize our system
 	
-	// lets try to open the file before I do too much other work
-	
-	fd = open (filename, flags, S_IRWXU | S_IRGRP | S_IROTH);
-	if (fd  == -1)
-		return (-1);		//error opening filename
-		
-	//Should have a mutex here
+	// get a local file descriptor (between 0 to 19), if all in used, return -1
 	returnFd = b_getFCB();				// get our own file descriptor
-										// check for error - all used FCB's
-	fcbArray[returnFd].systemFd = fd;	// Save the linux file descriptor
-	//	release mutex
+	if (returnFd  == -1)
+	return (-1);						// check for error - all used FCB's								
+	fcbArray[returnFd].fcbStatus = fd;	// Save the local file descriptor to indicate fcb status
 	
-	//allocate our buffer
+	// allocate our buffer
 	fcbArray[returnFd].buf = malloc (BUFSIZE);
 	if (fcbArray[returnFd].buf  == NULL)
 	{
 		// very bad, we can not allocate our buffer
-		close (fd);							// close linux file
-		fcbArray[returnFd].systemFd = -1; 	//Free FCB
+		fcbArray[returnFd].fcbStatus = -1; 	// Free FCB
 		return -1;
 	}
-		
+	
+	// initialize other fcb variables
 	fcbArray[returnFd].buflen = 0; 			// have not read anything yet
 	fcbArray[returnFd].index = 0;			// have not read anything yet
+	fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
+	fcbArray[returnFd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
+	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
+	fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
+	fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);	// need calculation from the filesize
 
 	return (returnFd);						// all set
 }
@@ -131,7 +128,7 @@ int b_write (int fd, char * buffer, int count)
 		return (-1); 					//invalid file descriptor
 		}
 		
-	if (fcbArray[fd].systemFd == -1)		//File not open for this descriptor
+	if (fcbArray[fd].fcbStatus == -1)		//File not open for this descriptor
 		{
 		return -1;
 		}	
@@ -139,7 +136,7 @@ int b_write (int fd, char * buffer, int count)
 	// Initialize the pointer pointing to the first byte in caller's buffer
 	pointer = 0;
 	
-	// Convert fileSize to how many blocks the file is taking
+	// Convert fileSize to how many blocks the file is taking (this is not the total blocks allocated)
 	fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
 
 	// Writing to the file from caller's buffer until reaching the end
@@ -235,7 +232,7 @@ int b_read (int fd, char * buffer, int count)
 		return (-1); 					//invalid file descriptor
 		}
 		
-	if (fcbArray[fd].systemFd == -1)		//File not open for this descriptor
+	if (fcbArray[fd].fcbStatus == -1)		//File not open for this descriptor
 		{
 		return -1;
 		}	
@@ -330,7 +327,7 @@ void b_close (int fd)
 		fcbArray[fd].writeBufferNonEmpty = false;
 	}
 	// update a few info about the file
-	// TODO: update file size, startingLBA to directory
+
 
 	// Reset values
 	fcbArray[fd].buflen = 0;
@@ -339,8 +336,8 @@ void b_close (int fd)
 	fcbArray[fd].fileBlocksAllocated = 0;
 	fcbArray[fd].fileSize = 0;
 
-	close (fcbArray[fd].systemFd);		// close the linux file handle
+	close (fcbArray[fd].fcbStatus);		// close the linux file handle
 	free (fcbArray[fd].buf);			// free the associated buffer
 	fcbArray[fd].buf = NULL;			// Safety First
-	fcbArray[fd].systemFd = -1;			// return this FCB to list of available FCB's 
+	fcbArray[fd].fcbStatus = -1;			// return this FCB to list of available FCB's 
 }
