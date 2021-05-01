@@ -1,3 +1,5 @@
+#include "freeSpace.h"
+
 typedef struct vcb {
     int number_of_blocks;  // number of blocks in volume
     int size_of_block;  // the size of a single block
@@ -6,7 +8,7 @@ typedef struct vcb {
     uint64_t LBA_root_directory;  // the LBA of the root directory
     int magic_number;  // magic number: where to write what value?
     int number_of_free_blocks;  // number of free blocks
-    freespace* free_space_ptr;  // not persistent
+    freeSpace* free_space_ptr;  // not persistent
 } vcb;
 
 #define BLOCKSIZE 512
@@ -17,4 +19,4 @@ typedef struct vcb {
  * @param blocksize The size of the the whole volume
  * @return void
  */
-vcb initializeVCB(uinit64_t volumesize)
+vcb initializeVCB(uint64_t volumesize, uint64_t blocksize);

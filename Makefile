@@ -35,6 +35,7 @@
 
 
 ROOTNAME=fsLowDemo
+TESTNAME=driver
 HW=
 FOPTION=
 RUNOPTIONS=SampleVolume 10000000 512
@@ -43,7 +44,9 @@ CFLAGS= -g -I.
 LIBS =pthread
 DEPS = 
 ADDOBJ= fsLow.o
+TESTOBJDEP=fsLow.o vcb.o freeSpace.o
 OBJ = $(ROOTNAME)$(HW)$(FOPTION).o $(ADDOBJ)
+TESTOBJ = $(TESTNAME).o $(TESTOBJDEP)
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS) 
@@ -51,8 +54,14 @@ OBJ = $(ROOTNAME)$(HW)$(FOPTION).o $(ADDOBJ)
 $(ROOTNAME)$(HW)$(FOPTION): $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) -lm -l readline -l $(LIBS)
 
+$(TESTNAME): $(TESTOBJ)
+	$(CC) -o $@ $^ $(CFLAGS) -lm -l readline -l $(LIBS)
+
 clean:
-	rm *.o $(ROOTNAME)$(HW)$(FOPTION)
+	rm -rf *.o $(ROOTNAME)$(HW)$(FOPTION) $(TESTNAME) SampleVolume
 
 run: $(ROOTNAME)$(HW)$(FOPTION)
 	./$(ROOTNAME)$(HW)$(FOPTION) $(RUNOPTIONS)
+
+test: $(TESTNAME)
+	 ./$(TESTNAME) $(RUNOPTIONS)

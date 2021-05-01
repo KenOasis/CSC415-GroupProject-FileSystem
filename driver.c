@@ -13,6 +13,7 @@
 #include "mfs.h"
 #include "freeSpace.h"
 #include "vcb.h"
+#include "b_io.h"
 
 int main (int argc, char *argv[])
 	{	
@@ -25,25 +26,15 @@ int main (int argc, char *argv[])
 	printf("Opened %s, Volume Size: %llu;  BlockSize: %llu; Return %d\n", filename, (ull_t)volumeSize, (ull_t)blockSize, retVal);
 	
 	char * buf = malloc(blockSize *2);
-	char * buf2 = malloc(blockSize *2);
 
 	vcb v0 = initializeVCB(BLOCKSIZE * 2, BLOCKSIZE);
 
 	memcpy(buf, &v0, sizeof(v0));
 	LBAwrite (buf, 2, 0);
-	LBAread (buf2, 2, 0);
-	vcb *v1 = malloc(sizeof(vcb));
-	memcpy(v1, buf2, sizeof(vcb));
-	printf("magic number is %x\n", v1->magic_number);
-	if (memcmp(buf, buf2, blockSize*2)==0)
-		{
-		printf("Read/Write worked\n");
-		}
-	else
-		printf("FAILURE on Write/Read\n");
-		
-	free (buf);
-	free(buf2);
+
+
+	free(buf);
+
 	closePartitionSystem();
 	return 0;	
 	}

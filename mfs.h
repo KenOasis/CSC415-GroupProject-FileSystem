@@ -20,7 +20,7 @@
 
 #include "b_io.h"
 #include "freeSpace.h"
-#include "fslow.h"
+#include "fsLow.h"
 #include <dirent.h>
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR

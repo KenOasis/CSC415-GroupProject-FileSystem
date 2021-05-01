@@ -4,7 +4,6 @@
 vcb initializeVCB(uint64_t volumesize, uint64_t blocksize) {
     int number_of_blocks = (volumesize + BLOCKSIZE - 1) / BLOCKSIZE;
     vcb *v0 = malloc(BLOCKSIZE);
-    // Read from disk
 
     // initialize 
    v0 -> number_of_blocks = number_of_blocks;
@@ -17,8 +16,6 @@ vcb initializeVCB(uint64_t volumesize, uint64_t blocksize) {
    v0 -> LBA_free_space = 1;
    // initialize directory
    v0 -> LBA_root_directory = 1;
-
-   // Write to disk
 
     return *v0;
 };
