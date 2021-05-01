@@ -43,7 +43,6 @@ int main (int argc, char *argv[])
 	fs_directory* directory = malloc(blockSize);
 	LBAread(directory, 1, v0->LBA_root_directory);
 	reload_directory(directory);
-	printf("\nWell\n");
 	char *name = "root/Users/";
 	fdDir *fdir = fs_opendir(name);
 	if(fdir != NULL){
@@ -55,14 +54,14 @@ int main (int argc, char *argv[])
 			printf("file %d: %s\n", file_count, dirinfo->d_name);
 		}
 		free(dirinfo);
-		char *newpath = malloc(sizeof(char) * 256);
-		char *origpath = malloc(sizeof(char) * 128);
-		strcpy(origpath, name);
-		newpath = strcat(origpath,"Another file");
-		struct fs_stat *buf = malloc(sizeof(struct fs_stat));
-		fs_stat("Jimmy", buf);
-		printf(" Jimmy size is %lld\n", buf->st_size);
-	}	
+	}
+	char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
+	cwd = strcat(cwd, "-tail");
+	strcpy(cwd,"wrong");
+	cwd = "Luis\n";
+	printf("cwd is %s\n", cwd);
+	free(cwd);
+	cwd = NULL;
 	if(fdir != NULL){
 		fs_closedir(fdir);
 	}

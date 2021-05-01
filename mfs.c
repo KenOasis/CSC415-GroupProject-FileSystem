@@ -89,8 +89,9 @@ int fs_mkdir(const char *pathname, mode_t mode){
     int success_status = 0;
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    cwd = strcat(cwd,"/");
-    fullpath = strcat(cwd, pathname);
+    strcpy(fullpath, cwd);
+    fullpath = strcat(fullpath,"/");
+    fullpath = strcat(fullpath, pathname);
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
     reload_directory(directory);
@@ -124,6 +125,8 @@ int fs_mkdir(const char *pathname, mode_t mode){
     free_split_dir(spdir);
     free_directory(directory);
     free(new_dir_name);
+    free(cwd);
+    cwd = NULL;
     fullpath = NULL;
     new_dir_name = NULL;
     directory = NULL;
@@ -136,8 +139,9 @@ int fs_rmdir(const char *pathname){
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *dirname = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    cwd = strcat(cwd, "/");
-    fullpath = strcat(cwd, pathname);
+    strcpy(fullpath, cwd);
+    fullpath = strcat(fullpath, "/");
+    fullpath = strcat(fullpath, pathname);
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
     reload_directory(directory);
@@ -171,6 +175,7 @@ int fs_rmdir(const char *pathname){
     free(dirname);
     free_split_dir(spdir);
     free_directory(directory);
+    free(cwd);
     cwd = NULL;
     dirname = NULL;
     fullpath = NULL;
@@ -259,20 +264,22 @@ int fs_setcwd(char *buf){
         }
     }else if((strlen(buf) > 1) && (buf[0] == '.')){
         new_path = assemble_path(buf + 1, 0, 0);
+        strcpy(new_dir_path, cwd);
         if(spcwd->length > 1)
-            cwd = strcat(cwd, "/");
-        new_dir_path = strcat(cwd, new_path);
+            new_dir_path = strcat(new_dir_path, "/");
+        new_dir_path = strcat(new_dir_path, new_path);
     }else if(strcmp(buf, "/") == 0){
         strcpy(new_dir_path, "root/");
     }else if((strlen(buf) > 1) && (buf[0] == '/')){
         new_path = assemble_path(buf + 1, 0, 0);
-        strcpy(cwd, "root/");
-        new_dir_path = strcat(cwd, new_path);
+        strcpy(new_dir_path, "root/");
+        new_dir_path = strcat(new_dir_path, new_path);
     }else{
         new_path = assemble_path(buf, 0, 0);
+        strcpy(new_dir_path, cwd);
         if(spcwd->length > 1)
-            cwd = strcat(cwd, "/");
-        new_dir_path = strcat(cwd, new_path);
+            new_dir_path = strcat(new_dir_path, "/");
+        new_dir_path = strcat(new_dir_path, new_path);
     }
     /*check the url is exist as dir*/
     temp_cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
@@ -292,7 +299,7 @@ int fs_setcwd(char *buf){
     free(temp_cwd);
     free(new_parent_dir);
     free(new_dir_path);
-    // free(cwd); //free will cause error????
+    free(cwd); 
     cwd = NULL;
     spcwd = NULL;
     spbuf = NULL;
@@ -308,8 +315,9 @@ int fs_isFile(char * path){
     int is_file = 0;
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    cwd = strcat(cwd,"/");
-    fullpath = strcat(cwd, path);
+    strcpy(fullpath, cwd);
+    fullpath = strcat(fullpath,"/");
+    fullpath = strcat(fullpath, path);
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
@@ -325,6 +333,7 @@ int fs_isFile(char * path){
     free(fullpath);
     free_split_dir(spdir);
     free_directory(directory);
+    free(cwd);
     cwd = NULL;
     fullpath = NULL;
     directory = NULL;
@@ -336,8 +345,9 @@ int fs_isDir(char * path){
     int is_dir = 0;
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    cwd = strcat(cwd, "/");
-    fullpath = strcat(cwd, path);
+    strcpy(fullpath, cwd);
+    fullpath = strcat(fullpath, "/");
+    fullpath = strcat(fullpath, path);
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
@@ -353,6 +363,7 @@ int fs_isDir(char * path){
     free(fullpath);
     free_split_dir(spdir);
     free_directory(directory);
+    free(cwd);
     cwd = NULL;
     fullpath = NULL;
     directory = NULL;
@@ -370,8 +381,10 @@ int fs_stat(const char *path, struct fs_stat *buf){
     reload_directory(directory);
     char *fullpath= malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
     char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-    cwd = strcat(cwd, "/");
-    fullpath = strcat(cwd,path);
+    // cwd = strcat(cwd, "/");
+    strcpy(fullpath, cwd);
+    fullpath = strcat(fullpath, "/");
+    fullpath = strcat(fullpath,path);
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     uint32_t inode_pos =(directory->d_dir_ents + de_pos)->de_inode;
@@ -387,6 +400,7 @@ int fs_stat(const char *path, struct fs_stat *buf){
     free_directory(directory);
     free(fullpath);
     free_split_dir(spdir);
+    free(cwd);
     fullpath = NULL;
     spdir = NULL;
     cwd = NULL;
@@ -394,4 +408,3 @@ int fs_stat(const char *path, struct fs_stat *buf){
     inode = NULL;
     return 0;
 }
-
