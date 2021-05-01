@@ -28,6 +28,7 @@ uint32_t find_free_dir_ent(fs_directory* directory){
     }
     return free_dir_ent;
 }
+
 /****************************************************
 * @parameters 
 *   @type fs_directory*: directory
@@ -42,6 +43,7 @@ int reload_directory(fs_directory * directory){
     LBAread(directory->d_dir_ents, directory->d_de_blocks, directory->d_de_start_location);
     return 0;
 }
+
 /****************************************************
 * @parameters 
 *   @type fs_directory*: directory
@@ -55,6 +57,7 @@ void free_directory(fs_directory *directory){
     free(directory->d_inodes);
     free(directory);
 }
+
 /****************************************************
 * @parameters 
 *   @type fs_directory*: directory
@@ -72,6 +75,7 @@ int write_direcotry(fs_directory *directory){
     inodes = NULL;
     return 0;
 }
+
 /****************************************************
 * @parameters 
 *   @type splitDIR*: a struct hold splited path info
@@ -144,6 +148,7 @@ int is_duplicated_dir(uint32_t parent_de_pos, char* name){// if return value = 0
     directory = NULL;
     return is_duplicated;
 }
+
 /****************************************************
 * @parameters 
 *   @type fdDir*: pointer to the type fdDir
@@ -186,6 +191,7 @@ int find_childrens(fdDir *dirp){
     directory = NULL;
     return 0;
 }
+
 /****************************************************
 * @parameters 
 *   @type const char*: path to be splited 
@@ -227,6 +233,7 @@ splitDIR* split_dir(const char *name){
     pathname = NULL;
     return sDir;    
 }
+
 /****************************************************
 * @parameters 
 *   @type splitDIR*: the splited path info
@@ -235,7 +242,6 @@ splitDIR* split_dir(const char *name){
 * This destructor to free the allocated memory of 
 * strut type splitDIR
 ****************************************************/
-
 void free_split_dir(splitDIR *spdir){
     for(int i = 0; i < spdir->length; ++i){
         free(*(spdir->dir_names + i));
@@ -243,6 +249,24 @@ void free_split_dir(splitDIR *spdir){
     free(spdir);
 }
 
+/****************************************************
+* @parameters 
+*   @type char*: the buf hold the path to assembly
+    @type int*: the offset from the head of path
+		@type int*: the offset from the tail of path
+* @return
+*   @type char*: the path of assembly result
+* This function is to assembly path as fs_setcwd needed
+* example:
+*			intput:
+			buf: /this/is/a/path/of/test
+			head_offset: -1
+			tail_offset: -1
+			output:
+		  /is/a/path/of
+			it cut the 1st level from the head : /this
+			, and the 1st level from the tail: /of  
+****************************************************/
 char *assemble_path(char *buf, int head_offset, int tail_offset){
     char *temp = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     char *new_cwd = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
@@ -264,6 +288,7 @@ char *assemble_path(char *buf, int head_offset, int tail_offset){
     temp_spbuf = NULL;
     return new_cwd;
 }
+
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/
@@ -299,6 +324,7 @@ void display_time(time_t t){
     printf("%s %02d %02d:%02d\n", month_str[ptm->tm_mon],ptm->tm_mday, ptm->tm_hour, 
            ptm->tm_min);
 }
+
 /****************************************************
 *  helper function to format accessmode output, test only
 ****************************************************/

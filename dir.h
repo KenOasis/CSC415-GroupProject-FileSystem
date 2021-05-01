@@ -67,13 +67,17 @@ struct fs_directory{
 typedef struct fs_directory fs_directory;
 
 /****************************************************
-*  helper function to format accessmode output, test only
+struct to hold the global varibale with LBA root
+directory and the cwd
 ****************************************************/
 typedef struct{
 	 char cwd[DIR_MAXLENGTH + 1];
 	 uint64_t LBA_root_directory;
 }DirInfo;
 
+/****************************************************
+struct to hold splited name of each level of dir name
+****************************************************/
 struct splitDIR{
 	int length;
 	char **dir_names;
@@ -101,6 +105,7 @@ uint32_t find_free_dir_ent(fs_directory *directory);
 * This function reload the directory from LBA space
 ****************************************************/
 int reload_directory(fs_directory *directory);
+
 /****************************************************
 * @parameters 
 *   @type fs_directory*: directory
@@ -110,6 +115,7 @@ int reload_directory(fs_directory *directory);
 *  of the struct type directory
 ****************************************************/
 int write_direcotry(fs_directory *directory);
+
 /****************************************************
 * @parameters 
 *   @type fs_directory*: directory
@@ -118,6 +124,7 @@ int write_direcotry(fs_directory *directory);
 * This function write directory back to LBA
 ****************************************************/
 void free_directory(fs_directory* directory);
+
 /****************************************************
 * @parameters 
 *   @type splitDIR*: a struct hold splited path info
@@ -129,6 +136,7 @@ void free_directory(fs_directory* directory);
 * entry. 
 ****************************************************/
 uint32_t find_DE_pos(splitDIR *spdir);
+
 /****************************************************
 * @parameters 
 *   @type uint32_t: position of the parent directory
@@ -140,6 +148,7 @@ uint32_t find_DE_pos(splitDIR *spdir);
 * name in the parent directory
 ****************************************************/
 int is_duplicated_dir(uint32_t parent_de_pos, char* name);
+
 /****************************************************
 * @parameters 
 *   @type fdDir*: pointer to the type fdDir
@@ -150,6 +159,7 @@ int is_duplicated_dir(uint32_t parent_de_pos, char* name);
 * the children.
 ****************************************************/
 int find_childrens(fdDir *dirp);
+
 /****************************************************
 * @parameters 
 *   @type const char*: path to be splited 
@@ -160,6 +170,7 @@ int find_childrens(fdDir *dirp);
 * of each level of directory/file
 ****************************************************/
 splitDIR* split_dir(const char *name);
+
 /****************************************************
 * @parameters 
 *   @type splitDIR*: the splited path info
@@ -170,11 +181,31 @@ splitDIR* split_dir(const char *name);
 ****************************************************/
 void free_split_dir(splitDIR *spdir);
 
+/****************************************************
+* @parameters 
+*   @type char*: the buf hold the path to assembly
+    @type int*: the offset from the head of path
+		@type int*: the offset from the tail of path
+* @return
+*   @type char*: the path of assembly result
+* This function is to assembly path as fs_setcwd needed
+* example:
+*			intput:
+			buf: /this/is/a/path/of/test
+			head_offset: -1
+			tail_offset: -1
+			output:
+		  /is/a/path/of
+			it cut the 1st level from the head : /this
+			, and the 1st level from the tail: /of  
+****************************************************/
 char *assemble_path(char *buf, int head_offset, int tail_offset);
+
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/
 void display_time(time_t t); 
+
 /****************************************************
 *  helper function to format accessmode output, test only
 ****************************************************/
