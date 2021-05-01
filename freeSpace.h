@@ -2,7 +2,6 @@
 #define _FREESPACE_H
 
 #include <stdlib.h>
-
 typedef struct  {
 	int* bitVector;
 	int nextFreePosition;
