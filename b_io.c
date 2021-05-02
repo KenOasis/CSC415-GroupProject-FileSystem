@@ -28,10 +28,12 @@
 #define MAXFCBS 20
 #define BUFSIZE 512
 #define GETMOREBLOCKS 10
+#define INITIALBLOCKS 10
 
 typedef struct b_fcb
 	{
 	int fcbStatus;		// -1 means available, 1 means not available
+	int readWriteFlags;	// 00 indicate read only, 01 indicate write only
 	int startingLBA;	//the LBA of the first block
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
@@ -60,7 +62,7 @@ void b_init ()
 	startup = 1;
 }
 
-//Method to get a free FCB element
+//Method to get a free FCB element, intialize fcbStatus
 int b_getFCB ()
 {
 	for (int i = 0; i < MAXFCBS; i++)
@@ -71,22 +73,20 @@ int b_getFCB ()
 			return i;		//Not thread safe
 		}
 	}
-	return (-1);  //all in use
+	return -1;  //all in use
 }
 	
 // Interface to open a buffered file
 int b_open (char * filename, int flags)
 {
-	int fd;
 	int returnFd;
-
 	if (startup == 0) b_init();  //Initialize our system
 	
-	// get a local file descriptor (between 0 to 19), if all in used, return -1
-	returnFd = b_getFCB();				// get our own file descriptor
-	if (returnFd  == -1)
-	return (-1);						// check for error - all used FCB's								
-	fcbArray[returnFd].fcbStatus = fd;	// Save the local file descriptor to indicate fcb status
+	// check if all 20 spots are used at the same time
+	returnFd = b_getFCB();				// find an available spot, get our own file descriptor
+	if (returnFd  == -1) {
+		return -1;						// no spot available, all 20 files are used, not able to open
+	}				
 	
 	// allocate our buffer
 	fcbArray[returnFd].buf = malloc (BUFSIZE);
@@ -100,13 +100,39 @@ int b_open (char * filename, int flags)
 	// initialize other fcb variables
 	fcbArray[returnFd].buflen = 0; 			// have not read anything yet
 	fcbArray[returnFd].index = 0;			// have not read anything yet
-	fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
 	fcbArray[returnFd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
 	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
-	fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
-	fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);	// need calculation from the filesize
+	
+	// O_CREAT
+	if (flags & O_CREAT) {
+		// fcbArray[returnFd].startingLBA = findMultipleBlocks(INITIALBLOCKS);	// initialize 10 blocks for new file
+		fcbArray[returnFd].startingLBA = 1; //fake
+	} else {
+		// fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
+		// fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);	// convert filesize to how many blocks
+	}
 
-	return (returnFd);						// all set
+	// O_TRUNC
+	if (flags & O_TRUNC) {
+		fcbArray[returnFd].fileSize = 0;
+	} else {
+		// fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
+	}
+
+	// O_RDONLY: 0 for read only
+	if ((flags & O_ACCMODE) == O_RDONLY) {
+		fcbArray[returnFd].readWriteFlags = O_RDONLY;
+	
+	// O_WRONLY: 1 for read only
+	} else if ((flags & O_ACCMODE) == O_WRONLY) {
+		fcbArray[returnFd].readWriteFlags = O_WRONLY;
+	} else {
+		fcbArray[returnFd].readWriteFlags = -1;	// -1 means not initialized
+	}
+
+	printf("size: %d\n", fcbArray[returnFd].fileSize);
+	printf("read write flag: %d\n", fcbArray[returnFd].readWriteFlags);
+	return (returnFd);
 }
 
 
@@ -119,19 +145,24 @@ int b_write (int fd, char * buffer, int count)
 	int loadToBuffer;			// how many bytes is going to be load to buffer
 	int fileUsedBlocks;			// how many blocks the file has takne in the disk (this is <= blocks allocated)
 
-
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
 	if ((fd < 0) || (fd >= MAXFCBS))
 		{
-		return (-1); 					//invalid file descriptor
+		return -1; 					//invalid file descriptor
 		}
 		
 	if (fcbArray[fd].fcbStatus == -1)		//File not open for this descriptor
 		{
 		return -1;
 		}	
+	
+	// If the file is not for write, stop and return error
+	if (fcbArray[fd].readWriteFlags != O_WRONLY) {
+		printf("ERROR: Write only!\n");
+		return -1;
+	}
 
 	// Initialize the pointer pointing to the first byte in caller's buffer
 	pointer = 0;
@@ -170,7 +201,8 @@ int b_write (int fd, char * buffer, int count)
 			// check if all allocated blocks have been used
 			// if yes, call free space manager to get a new startingLBA
 			if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { 
-				int res = findMultipleBlocks(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
+				// int res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
+				int res = 1; // fake
 				if (res == -1) {
 					printf("ERROR: Write failed");
 					return -1;
@@ -237,6 +269,11 @@ int b_read (int fd, char * buffer, int count)
 		return -1;
 		}	
 		
+	// If the file is not for read, stop and return error
+	if (fcbArray[fd].readWriteFlags != O_RDONLY) {
+		printf("ERROR: Read only!\n");
+		return -1;
+	}
 	
 	// number of bytes available to copy from buffer
 	remainingBytesInMyBuffer = fcbArray[fd].buflen - fcbArray[fd].index;	
@@ -306,20 +343,23 @@ int b_read (int fd, char * buffer, int count)
 // Interface to Close the file	
 void b_close (int fd)
 {
+	printf("writeBufferNonEmpty: %d\n", fcbArray[fd].writeBufferNonEmpty);
 	// Add the end of the file remained in the write buffer
 	// When the indicator is true, we know that there are some remaining to write
 	if (fcbArray[fd].writeBufferNonEmpty) {
 		// Convert fileSize to how many blocks the file is taking
 		int fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
 		// check if all allocated blocks have been used
-		if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { // if no empty block to use
-			int res = findMultipleBlocks(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
+		if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { // if all have been used
+			// int res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
+			int res = 1; // fake
 			if (res == -1) {
 				printf("ERROR: Write failed");
-				return -1;
 			}
 			fcbArray[fd].startingLBA = res; // Update the startingLBA
 		}
+		printf("fcbArray[fd].startingLBA: %d\n", fcbArray[fd].startingLBA);
+		printf("fileUsedBlocks: %d\n", fileUsedBlocks);
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
 
 		// update

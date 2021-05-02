@@ -44,7 +44,7 @@ CFLAGS= -g -I.
 LIBS =pthread
 DEPS = 
 ADDOBJ= fsLow.o
-TESTOBJDEP=fsLow.o vcb.o freeSpace.o
+TESTOBJDEP=fsLow.o vcb.o freeSpace.o b_io.c
 OBJ = $(ROOTNAME)$(HW)$(FOPTION).o $(ADDOBJ)
 TESTOBJ = $(TESTNAME).o $(TESTOBJDEP)
 
