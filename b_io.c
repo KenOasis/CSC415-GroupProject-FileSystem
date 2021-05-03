@@ -119,11 +119,15 @@ int b_open (char * filename, int flags)
 		// fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
 	}
 
-	// O_RDONLY: 0 for read only
-	if ((flags & O_ACCMODE) == O_RDONLY) {
+	// O_RDWR
+	if ((flags & O_ACCMODE) == O_RDWR) {
+		fcbArray[returnFd].readWriteFlags = O_RDWR;
+	
+	// O_RDONLY
+	} else if ((flags & O_ACCMODE) == O_RDONLY) {
 		fcbArray[returnFd].readWriteFlags = O_RDONLY;
 	
-	// O_WRONLY: 1 for read only
+	// O_WRONLY
 	} else if ((flags & O_ACCMODE) == O_WRONLY) {
 		fcbArray[returnFd].readWriteFlags = O_WRONLY;
 	} else {
@@ -159,8 +163,8 @@ int b_write (int fd, char * buffer, int count)
 		}	
 	
 	// If the file is not for write, stop and return error
-	if (fcbArray[fd].readWriteFlags != O_WRONLY) {
-		printf("ERROR: Write only!\n");
+	if (fcbArray[fd].readWriteFlags != O_WRONLY && fcbArray[fd].readWriteFlags != O_RDWR) {
+		printf("ERROR: No access to write.\n");
 		return -1;
 	}
 
@@ -270,8 +274,8 @@ int b_read (int fd, char * buffer, int count)
 		}	
 		
 	// If the file is not for read, stop and return error
-	if (fcbArray[fd].readWriteFlags != O_RDONLY) {
-		printf("ERROR: Read only!\n");
+	if (fcbArray[fd].readWriteFlags != O_RDONLY && fcbArray[fd].readWriteFlags != O_RDWR) {
+		printf("ERROR: No access to read.\n");
 		return -1;
 	}
 	
@@ -343,7 +347,7 @@ int b_read (int fd, char * buffer, int count)
 // Interface to Close the file	
 void b_close (int fd)
 {
-	printf("writeBufferNonEmpty: %d\n", fcbArray[fd].writeBufferNonEmpty);
+	// printf("writeBufferNonEmpty: %d\n", fcbArray[fd].writeBufferNonEmpty);
 	// Add the end of the file remained in the write buffer
 	// When the indicator is true, we know that there are some remaining to write
 	if (fcbArray[fd].writeBufferNonEmpty) {
@@ -358,8 +362,8 @@ void b_close (int fd)
 			}
 			fcbArray[fd].startingLBA = res; // Update the startingLBA
 		}
-		printf("fcbArray[fd].startingLBA: %d\n", fcbArray[fd].startingLBA);
-		printf("fileUsedBlocks: %d\n", fileUsedBlocks);
+		// printf("fcbArray[fd].startingLBA: %d\n", fcbArray[fd].startingLBA);
+		// printf("fileUsedBlocks: %d\n", fileUsedBlocks);
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
 
 		// update
