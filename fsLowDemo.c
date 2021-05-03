@@ -28,6 +28,8 @@
 //#include "vcb.h"
 #include "freeSpace.h"
 
+freeSpace* vector;
+
 int main (int argc, char *argv[])
 	{	
 	char * filename = "SampleVolume";
@@ -59,34 +61,36 @@ int main (int argc, char *argv[])
 		printf("FAILURE on Write/Read\n");
 		
 */
-	freeSpace* space = init_freeSpace(1000, 512);
-	u_int64_t blockLocation = findMultipleBlocks(5, space);
-	u_int64_t blockLocationTwo = findMultipleBlocks(2, space);
-	blockLocation = findMultipleBlocks(6, space);
+	vector = init_freeSpace(1000, 512);
+	u_int64_t blockLocation = findMultipleBlocks(5);
+	u_int64_t blockLocationTwo = findMultipleBlocks(2);
+	blockLocation = findMultipleBlocks(6);
 	//freeSomeBits(30, 2, space);
-	blockLocationTwo = expandFreeSection(blockLocationTwo, 2, 9, space);
-	for (int n = 0; n < space->size; n++) {
-		printf("Integer %d: %d\n", n, space->bitVector[n]);
+	blockLocationTwo = expandFreeSection(blockLocationTwo, 2, 9);
+	for (int n = 0; n < vector->size; n++) {
+		printf("Integer %d: %d\n", n, vector->bitVector[n]);
 	}
 	printf("Free block location: %lu, Second: %lu\n", blockLocation, blockLocationTwo);
-	LBAwrite(space, 1, 2);
-	LBAwrite(space->bitVector, (space->size + 127) / 128, space->LBABitVector);
+	LBAwrite(vector, 1, 2);
+	LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector);
 	printf("size of freespace: %ld\n", sizeof(freeSpace));
-	freeSpace* spaceCopy = malloc(512);
-	LBAread(spaceCopy, 1, 2);
-	printf("BlocksNeeded: %d\n", spaceCopy->blocksNeeded);
-	printf("Array int size: %d\n", spaceCopy->size);
-	spaceCopy->bitVector = malloc(sizeof(int) * spaceCopy->size);
-	LBAread(spaceCopy->bitVector, (spaceCopy->size + 127) / 128, space->LBABitVector);
-	for (int n = 0; n < spaceCopy->size; n++) {
-		printf("Integer %d: %d\n", n, spaceCopy->bitVector[n]);
+	free(vector->bitVector);
+	free(vector);
+	vector = NULL;
+	vector = malloc(512); //resets the freespace struct and vector, as if partition shut down. read from disk and see if it's consistent
+	LBAread(vector, 1, 2);
+	printf("BlocksNeeded: %d\n", vector->blocksNeeded);
+	printf("Array int size: %d\n", vector->size);
+	vector->bitVector = malloc(sizeof(int) * vector->size);
+	LBAread(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector);
+	findMultipleBlocks(3); //make a change to see if new vector from disk is usable
+	for (int n = 0; n < vector->size; n++) {
+		printf("Integer %d: %d\n", n, vector->bitVector[n]);
 	}
 	free (buf);
 	free(buf2);
-	free(space->bitVector);
-	free(space);
-	free(spaceCopy->bitVector);
-	free(spaceCopy);
+	free(vector->bitVector);
+	free(vector);
 	closePartitionSystem();
 	return 0;	
 	}

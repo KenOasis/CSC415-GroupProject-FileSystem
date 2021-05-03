@@ -17,7 +17,7 @@ typedef struct  {
 
 freeSpace* init_freeSpace(int totalBlocks, int bytesPerBlock);
 //u_int64_t findFreeBlock(freeSpace* vector);
-u_int64_t findMultipleBlocks(int blockCount, freeSpace* vector);
-void freeSomeBits(int startIndex, int count, freeSpace* vector);
-u_int64_t expandFreeSection(int fileLocation, int fileSize, int newSize, freeSpace* vector);
+u_int64_t findMultipleBlocks(int blockCount);
+void freeSomeBits(int startIndex, int count);
+u_int64_t expandFreeSection(int fileLocation, int fileSize, int newSize);
 #endif
