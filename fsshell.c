@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "fsLow.h"
+#include "b_io.h"
 #include "vcb.h"
 #include "freeSpace.h"
 #include "mfs.h"

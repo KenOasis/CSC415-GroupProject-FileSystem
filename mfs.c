@@ -138,6 +138,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
             fs_inode *inode = (directory->d_inodes + free_dir_ent);
             inode->fs_entry_type = DT_DIR;
             strcpy(de->de_name, new_dir_name);
+            printf("Test\n");
             write_direcotry(directory);
             de = NULL;
             inode = NULL;
