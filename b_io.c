@@ -101,26 +101,24 @@ int b_open (char * filename, int flags)
 int b_seek(int fd, off_t offset, int whence){
 	switch (whence)
 	{
-	// Set the offset to 0 where the file begin
+	/* Set the offset to 0 where the file begin 
+	   And to move the positions from the beginning of the file. */
 	case SEEK_SET:
 		offset = 0;
-		fd = offset;
+		fd += offset;
 		break;
-	// Set the 
+	// To add the current position based on offset and write to disk.
 	case SEEK_CUR:
-		fd += offset;
-		fd -= offset;
-		LBAread;
-		LBAwrite;
+		offset += fd;		
+		LBAwrite(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);	
 		break;
-
+	// To move the positions from the end of the file and write to disk.
 	case SEEK_END:
-		fd += offset;
-		fd -= offset;
-		LBAread;
-		LBAwrite;
+		offset += fd;
+		LBAwrite(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);
 		break;
 	}
+	LBAread(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);
 	return offset;
 
 }
