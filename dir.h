@@ -141,7 +141,7 @@ uint32_t find_DE_pos(splitDIR *spdir);
 * This function check whether the new dir has duplicated
 * name in the parent directory
 ****************************************************/
-int is_duplicated_dir(uint32_t parent_de_pos, char* name);
+int is_duplicated_dir(uint32_t parent_de_pos, const char* name);
 
 /****************************************************
 * @parameters 
@@ -184,6 +184,23 @@ void free_split_dir(splitDIR *spdir);
 ****************************************************/
 char *assemble_path(char *buf, int head_offset, int tail_offset);
 
+int is_File(char *fullpath);
+int is_Dir(char *fullpath);
+uint64_t getFileLBA(const char *filename, int flags);
+
+blkcnt_t getBlocks(const char *filename);
+
+off_t getFileSize(const char *filename);
+
+int setFileSize(const char *filename, off_t filesize);
+
+int setFileBlocks(const char *filename, blkcnt_t count);
+
+int setFileLBA(const char *filename, uint64_t Address);
+
+int updateAccessTime(fs_de *dir_ent);
+
+int updateModTime(fs_de *dir_ent);
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/

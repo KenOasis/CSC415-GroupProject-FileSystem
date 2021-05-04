@@ -436,33 +436,33 @@ int fs_setcwd(char *buf){
 * name is the type File or not
 ****************************************************/
 int fs_isFile(char * path){
-    int is_file = 0;
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     strcpy(fullpath, cwd);
     fullpath = strcat(fullpath,"/");
     fullpath = strcat(fullpath, path);
-    fs_directory* directory = malloc(MINBLOCKSIZE);
-	LBAread(directory, 1, fs_DIR.LBA_root_directory);
-	reload_directory(directory);
-    splitDIR *spdir = split_dir(fullpath);
-    uint32_t de_pos = find_DE_pos(spdir);
-    // If the path is valid(exist)
-    if(de_pos != UINT32_MAX){
-        uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
-        unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
-        if(file_type == DT_REG){
-            is_file = 1;
-        }
-    }
+    int is_file = is_File(fullpath);
+    // fs_directory* directory = malloc(MINBLOCKSIZE);
+	// LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	// reload_directory(directory);
+    // splitDIR *spdir = split_dir(fullpath);
+    // uint32_t de_pos = find_DE_pos(spdir);
+    // // If the path is valid(exist)
+    // if(de_pos != UINT32_MAX){
+    //     uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
+    //     unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
+    //     if(file_type == DT_REG){
+    //         is_file = 1;
+    //     }
+    // }
     free(fullpath);
-    free_split_dir(spdir);
-    free_directory(directory);
+    // free_split_dir(spdir);
+    // free_directory(directory);
     free(cwd);
     cwd = NULL;
     fullpath = NULL;
-    directory = NULL;
-    spdir = NULL;
+    // directory = NULL;
+    // spdir = NULL;
     return is_file;
     }//return 1 if file, 0 otherwise
 
@@ -476,33 +476,34 @@ int fs_isFile(char * path){
 * name is the type Dir or not
 ****************************************************/
 int fs_isDir(char * path){
-    int is_dir = 0;
     char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     strcpy(fullpath, cwd);
     fullpath = strcat(fullpath, "/");
     fullpath = strcat(fullpath, path);
-    fs_directory* directory = malloc(MINBLOCKSIZE);
-	LBAread(directory, 1, fs_DIR.LBA_root_directory);
-	reload_directory(directory);
-    splitDIR *spdir = split_dir(fullpath);
-    uint32_t de_pos = find_DE_pos(spdir);
-    // if the path is valid(exist), check file info
-    if(de_pos != UINT32_MAX){
-        uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
-        unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
-        if(file_type == DT_DIR){
-            is_dir = 1;
-        }
-    }
+
+    int is_dir = is_Dir(fullpath);
+    // fs_directory* directory = malloc(MINBLOCKSIZE);
+	// LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	// reload_directory(directory);
+    // splitDIR *spdir = split_dir(fullpath);
+    // uint32_t de_pos = find_DE_pos(spdir);
+    // // if the path is valid(exist), check file info
+    // if(de_pos != UINT32_MAX){
+    //     uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
+    //     unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
+    //     if(file_type == DT_DIR){
+    //         is_dir = 1;
+    //     }
+    // }
     free(fullpath);
-    free_split_dir(spdir);
-    free_directory(directory);
+    // free_split_dir(spdir);
+    // free_directory(directory);
     free(cwd);
     cwd = NULL;
     fullpath = NULL;
-    directory = NULL;
-    spdir = NULL;
+    // directory = NULL;
+    // spdir = NULL;
     return is_dir;
 }		//return 1 if directory, 0 otherwise
 
@@ -574,7 +575,6 @@ int fs_stat(const char *path, struct fs_stat *buf){
     buf->st_modtime = inode->fs_modtime;
     buf->st_createtime = inode->fs_createtime;
     buf->st_accessmode = inode->fs_accessmode;
-    buf->st_file_address = inode->fs_address;
     free_directory(directory);
     free(fullpath);
     free_split_dir(spdir);

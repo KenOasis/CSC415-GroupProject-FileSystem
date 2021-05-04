@@ -30,7 +30,7 @@
 #include "dir.h"
 int main (int argc, char *argv[])
 	{	
-	char * filename = "VolumeZero";
+	char * filename = "VolumeTest";
 	uint64_t volumeSize = 10000000;
 	uint64_t blockSize = BLOCKSIZE;
   int retVal;
@@ -56,10 +56,10 @@ int main (int argc, char *argv[])
 		free(dirinfo);
 	}
 	char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-	cwd = strcat(cwd, "-tail");
-	strcpy(cwd,"wrong");
-	cwd = "Luis\n";
 	printf("cwd is %s\n", cwd);
+	char *filepath = "newFile";
+	uint32_t file_pos = getFileLBA(filepath, O_TRUNC);
+	printf("file pos is %u \n", file_pos);
 	free(cwd);
 	cwd = NULL;
 	if(fdir != NULL){

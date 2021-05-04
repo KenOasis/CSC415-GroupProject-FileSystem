@@ -104,7 +104,7 @@ int b_open (char * filename, int flags)
 	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
 	
 	// O_CREAT
-	if (flags & O_CREAT) {
+	if ((flags & O_CREAT) == O_CREAT) {
 		// fcbArray[returnFd].startingLBA = findMultipleBlocks(INITIALBLOCKS);	// initialize 10 blocks for new file
 		fcbArray[returnFd].startingLBA = 1; //fake
 	} else {
@@ -113,7 +113,7 @@ int b_open (char * filename, int flags)
 	}
 
 	// O_TRUNC
-	if (flags & O_TRUNC) {
+	if ((flags & O_TRUNC) == O_TRUNC) {
 		fcbArray[returnFd].fileSize = 0;
 	} else {
 		// fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
