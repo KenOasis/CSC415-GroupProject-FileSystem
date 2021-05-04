@@ -9,21 +9,17 @@
 #include <string.h>
 #include <dirent.h>
 #include "fsLow.h"
-#include "mfs.h"
 #include "freeSpace.h"
 #ifndef DIR_MAXLENGTH
 #define DIR_MAXLENGTH 4096
 #endif
 
-#ifndef fdDir
-typedef struct fdDir fdDir;
-#endif
 /****************************************************
 *  struct type to hold inodes which contains the meta
 *  date of the file or directory
 ****************************************************/
 
-struct fs_inode{
+typedef struct{
 	off_t     fs_size;    		/* total size, in bytes */
 	blksize_t fs_blksize; 		/* blocksize for file system I/O */
 	blkcnt_t  fs_blocks;  		/* number of 512B blocks allocated */
@@ -33,27 +29,26 @@ struct fs_inode{
 	unsigned char fs_entry_type; /* entry type , file or directory*/
 	uint64_t  fs_address;  /* inode address to find the actual data */
   int       fs_accessmode;      /* access mode */
-};
-typedef struct fs_inode fs_inode;
+}fs_inode;
+
 
 /****************************************************
 * struct type to hold the directory entry info
 * this struct maintain the logical internal structure
 * (tree) of the directory/file system
 ****************************************************/
-struct fs_de{
+typedef struct{
 	char de_name[256];
 	uint32_t de_inode; /* inode number of current directory */
 	uint32_t de_dotdot_inode; /* inode number of parent direcotry */
-};
-typedef struct fs_de fs_de;
+}fs_de;
 
 /****************************************************
 * struct type to hold the directory info. It is use 
 * for locating and accessing the inodes and directory 
 * entries. 
 ****************************************************/
-struct fs_directory{
+typedef struct {
 	uint64_t d_de_start_location;		/* Starting LBA of directory entries */ 
 	blkcnt_t d_de_blocks; /* number of blocks for directory entries */
 	uint64_t d_inode_start_location; /* Starting 
@@ -63,8 +58,8 @@ struct fs_directory{
 	uint32_t d_num_DEs; /* number of directory entry */
 	fs_inode * d_inodes; /* inodes, not pertain */
 	fs_de * d_dir_ents; /* DEs, not pertain */
-};
-typedef struct fs_directory fs_directory;
+}fs_directory;
+
 
 /****************************************************
 struct to hold the global varibale with LBA root
@@ -78,13 +73,12 @@ typedef struct{
 /****************************************************
 struct to hold splited name of each level of dir name
 ****************************************************/
-struct splitDIR{
+typedef struct{
 	int length;
 	char **dir_names;
-};
-typedef struct splitDIR splitDIR;
+}splitDIR;
 
-typedef struct fdDir fdDir;
+
 
 /****************************************************
 * @parameters 
@@ -148,17 +142,6 @@ uint32_t find_DE_pos(splitDIR *spdir);
 * name in the parent directory
 ****************************************************/
 int is_duplicated_dir(uint32_t parent_de_pos, char* name);
-
-/****************************************************
-* @parameters 
-*   @type fdDir*: pointer to the type fdDir
-* @return
-*   @type int: 0 is success, 1 is fail
-* This function find the children of the given
-* directory entry, fdDip will store the pointers to 
-* the children.
-****************************************************/
-int find_childrens(fdDir *dirp);
 
 /****************************************************
 * @parameters 

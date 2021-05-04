@@ -1,10 +1,9 @@
+
 #include <string.h>
 #include "freeSpace.h"
 #include "fsLow.h"
 #include "mfs.h"
 #include "vcb.h"
-#include "dir.h"
-
 /****************************************************
 * @parameters 
 *   @type uint_32: a number represent the position
@@ -138,7 +137,6 @@ int fs_mkdir(const char *pathname, mode_t mode){
             fs_inode *inode = (directory->d_inodes + free_dir_ent);
             inode->fs_entry_type = DT_DIR;
             strcpy(de->de_name, new_dir_name);
-            printf("Test\n");
             write_direcotry(directory);
             de = NULL;
             inode = NULL;
@@ -235,22 +233,50 @@ int fs_rmdir(const char *pathname){
 *	children of them
 ****************************************************/
 fdDir * fs_opendir(const char *name){
-   splitDIR *spdir = split_dir(name);
-   fdDir *dirp = NULL;
-   dirp = malloc(sizeof(fdDir));
-   dirp->cur_pos = 0;
-   uint32_t de_pos = find_DE_pos(spdir);
-   if(de_pos == UINT32_MAX){
-       char *filename = *(spdir->dir_names + (spdir->length - 1));
-       printf("no such file or direcotry: %s\n", filename);
-       free_split_dir(spdir);
-       free(dirp);
-       spdir = NULL;
-       filename = NULL;
-       return NULL;
-   }
-   dirp->de_pos = de_pos;
-   find_childrens(dirp);
+    splitDIR *spdir = split_dir(name);
+    fdDir *dirp = malloc(sizeof(fdDir));
+    dirp->cur_pos = 0;
+    uint32_t de_pos = find_DE_pos(spdir);
+    if(de_pos == UINT32_MAX){
+        char *filename = *(spdir->dir_names + (spdir->length - 1));
+        printf("no such file or direcotry: %s\n", filename);
+        free_split_dir(spdir);
+        free(dirp);
+        spdir = NULL;
+        filename = NULL;
+        return NULL;
+    }
+    dirp->de_pos = de_pos;
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+    LBAread(directory, 1, fs_DIR.LBA_root_directory);
+    reload_directory(directory);
+    uint32_t parent_inode = dirp->de_pos;
+    uint32_t count_children = 0;
+    uint32_t current_parent_inode;
+    for(int i = 1; i < directory->d_num_DEs; ++i){
+        current_parent_inode = (directory->d_dir_ents + i)->de_dotdot_inode;
+        if(current_parent_inode == parent_inode){
+            count_children++;
+        }
+    }
+    dirp->num_children = count_children;
+    dirp->childrens = (fs_de**)malloc(sizeof(fs_de*) * count_children);
+
+    int pos = 0;
+    for(int i = 1; i < directory->d_num_DEs; ++i){
+        fs_de *current_dir_ent = (directory->d_dir_ents + i);
+        current_parent_inode = current_dir_ent->de_dotdot_inode;
+        if(current_parent_inode == parent_inode){
+            *(dirp->childrens + pos) = current_dir_ent;
+            pos++;
+        }
+        current_dir_ent = NULL;
+        if(pos == count_children){
+            break;
+        }
+    }
+   free_directory(directory);
+   directory = NULL;
    free_split_dir(spdir);
    spdir = NULL;
    return dirp;

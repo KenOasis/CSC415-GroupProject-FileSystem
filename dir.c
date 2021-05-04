@@ -1,7 +1,6 @@
 #include <string.h>
 #include "fsLow.h"
 #include "dir.h"
-#include "mfs.h"
 
 /****************************************************
 * @parameters 
@@ -139,7 +138,6 @@ int is_duplicated_dir(uint32_t parent_de_pos, char* name){// if return value = 0
        
         int not_same_name = strcmp(name, (directory->d_dir_ents + i)->de_name);
         if((current_parent == parent_de_pos) && (!not_same_name)){
-            free_directory(directory);
             is_duplicated = 1;
             break;
         }
@@ -147,49 +145,6 @@ int is_duplicated_dir(uint32_t parent_de_pos, char* name){// if return value = 0
     free_directory(directory);
     directory = NULL;
     return is_duplicated;
-}
-
-/****************************************************
-* @parameters 
-*   @type fdDir*: pointer to the type fdDir
-* @return
-*   @type int: 0 is success, 1 is fail
-* This function find the children of the given
-* directory entry, fdDip will store the pointers to 
-* the children.
-****************************************************/
-int find_childrens(fdDir *dirp){
-    fs_directory* directory = malloc(MINBLOCKSIZE);
-    LBAread(directory, 1, fs_DIR.LBA_root_directory);
-    reload_directory(directory);
-    uint32_t parent_inode = dirp->de_pos;
-    uint32_t count_children = 0;
-    uint32_t current_parent_inode;
-    for(int i = 1; i < directory->d_num_DEs; ++i){
-        current_parent_inode = (directory->d_dir_ents + i)->de_dotdot_inode;
-        if(current_parent_inode == parent_inode){
-            count_children++;
-        }
-    }
-    dirp->num_children = count_children;
-    dirp->childrens = (fs_de**)malloc(sizeof(fs_de*) * count_children);
-
-    int pos = 0;
-    for(int i = 1; i < directory->d_num_DEs; ++i){
-        fs_de *current_dir_ent = (directory->d_dir_ents + i);
-        current_parent_inode = current_dir_ent->de_dotdot_inode;
-        if(current_parent_inode == parent_inode){
-            *(dirp->childrens + pos) = current_dir_ent;
-            pos++;
-        }
-        current_dir_ent = NULL;
-        if(pos == count_children){
-            break;
-        }
-    }
-    free_directory(directory);
-    directory = NULL;
-    return 0;
 }
 
 /****************************************************

@@ -38,10 +38,6 @@ typedef u_int64_t uint64_t;
 typedef u_int32_t uint32_t;
 #endif
 
-#ifndef fs_de
-typedef struct fs_de fs_de;
-#endif
-
 #ifndef DIR_MAXLENGTH
 #define DIR_MAXLENGTH 4096
 #endif
@@ -61,8 +57,7 @@ struct fs_diriteminfo
 *  children means that under the current cwd
 *  each of the sub direcotry entries
 ****************************************************/
-struct fdDir
-	{
+typedef struct {
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
 	unsigned short d_reclen;    /* length of this record not used*/
 	unsigned short dirEntryPosition; /* not used*/
@@ -70,9 +65,7 @@ struct fdDir
 	uint32_t cur_pos; /* current pos (cursor) of the iterated children */
 	uint32_t num_children; /* total number of children of this dir */
 	fs_de **childrens; /* pointer to hold children */
-	};
-
-typedef struct fdDir fdDir;
+	}fdDir;
 
 /****************************************************
 * @parameters 

@@ -1,7 +1,5 @@
 
 #include "vcb.h"
-#include "mfs.h"
-#include "dir.h"
 #include "freeSpace.h"
 int initializeVCB(uint64_t volumesize, uint64_t blocksize) {
     int number_of_blocks = (volumesize + BLOCKSIZE - 1) / BLOCKSIZE;

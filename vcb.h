@@ -1,6 +1,7 @@
 #ifndef _VCB_H
 #define _VCB_H
 #include "freeSpace.h"
+#include "mfs.h"
 typedef struct vcb {
     int number_of_blocks;  // number of blocks in volume
     int size_of_block;  // the size of a single block
