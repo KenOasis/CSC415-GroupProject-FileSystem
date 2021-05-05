@@ -298,32 +298,35 @@ uint64_t getFileLBA(const char *filename, int flags){
     fullpath = strcat(fullpath, filename);   
     uint32_t parent_pos = find_DE_pos(spdir);
     int is_duplicated = is_duplicated_dir(parent_pos, filename);
-    int is_file;
+    int is_file = 0;
     if(is_duplicated){
         is_file = is_File(fullpath);
     }
-    
     if(is_duplicated){
         if(!is_file){
-            printf("open: %s exist in system as  directory\n", filename);
+            printf("open: %s exist in system as directory\n", filename);
             result = UINT64_MAX;
-        }else if((flags & O_CREAT) == (O_CREAT)){
-            printf("open: File %s is exist\n", filename);
-            result = UINT64_MAX;
-        }else if((flags & O_TRUNC) == O_TRUNC){
+        }else{
             splitDIR *file_spdir = split_dir(fullpath);
             uint32_t file_de_pos = find_DE_pos(file_spdir);
             fs_de *file_de = (directory->d_dir_ents + file_de_pos);
             fs_inode *file_inode = (directory->d_inodes + file_de_pos);
             strcpy(file_de->de_name, filename);
-            file_inode->fs_blocks = 0;
-            file_inode->fs_size = 0;
-            result = file_inode->fs_address;
+            if((flags & O_TRUNC) == O_TRUNC){
+            // ** To-do free the old LBA space
+                file_inode->fs_blocks = 0;
+                file_inode->fs_size = 0;
+                // ** To-do get new allocate space for write
+                result = 666;
+                file_inode->fs_address = result;
+            }else{
+                result = file_inode->fs_address;
+            }
             write_directory(directory);
             file_de = NULL;
             file_inode = NULL;
         }
-    }else{
+    }else if((flags & O_CREAT) == O_CREAT){
         // No same name dir or file exist
         uint32_t new_de_pos = find_free_dir_ent(directory);
         fs_de *new_de = (directory->d_dir_ents + new_de_pos);
@@ -333,11 +336,14 @@ uint64_t getFileLBA(const char *filename, int flags){
         strcpy(new_de->de_name, filename);
         //Allocated space (LBA) for file 
         // Test only
-        new_inode->fs_address = 777;
+        new_inode->fs_address = 888;
         result = new_inode->fs_address;
         write_directory(directory);
         new_de = NULL;
         new_inode = NULL;
+    }else{
+        printf("File %s not exist\n",filename);
+        result = UINT64_MAX;
     }
     return result;
 }
