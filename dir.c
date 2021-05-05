@@ -1,5 +1,4 @@
 #include <string.h>
-#include "fsLow.h"
 #include "dir.h"
 #include "b_io.h"
 /****************************************************
@@ -14,7 +13,7 @@
 uint32_t find_free_dir_ent(fs_directory* directory){
     uint32_t free_dir_ent = 0;
     for(int i = 0; i < directory->d_num_DEs; ++i){
-        if((directory->d_dir_ents + i)->de_dotdot_inode == UINT32_MAX){
+        if((directory->d_dir_ents + i)->de_dotdot_inode == UINT_MAX){
             free_dir_ent = i;
             break;
         }
@@ -22,6 +21,7 @@ uint32_t find_free_dir_ent(fs_directory* directory){
     if(free_dir_ent == 0){
         /**To-Do**
          * extend more directory entries and more inodes, then get the new available space
+         * remember to chage the directory info and write back to LBA
          */
         return free_dir_ent;
     }
@@ -81,12 +81,12 @@ int write_directory(fs_directory *directory){
 * @return
 *   @type uint_32: a number represent the position
 *                  of the directory entry, If it equal
-                   UINT32_MAX, it means fail
+                   UINT_MAX, it means fail
 * This function return the position of the directory
 * entry. 
 ****************************************************/
 uint32_t find_DE_pos(splitDIR *spdir){
-    uint32_t de_pos = UINT32_MAX;
+    uint32_t de_pos = UINT_MAX;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
@@ -252,7 +252,7 @@ int is_File(char *fullpath){
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     // If the path is valid(exist)
-    if(de_pos != UINT32_MAX){
+    if(de_pos != UINT_MAX){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
         if(file_type == DT_REG){
@@ -274,7 +274,7 @@ int is_Dir(char *fullpath){
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     // if the path is valid(exist), check file info
-    if(de_pos != UINT32_MAX){
+    if(de_pos != UINT_MAX){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
         if(file_type == DT_DIR){
@@ -304,7 +304,7 @@ uint64_t getFileLBA(const char *filename, int flags){
     if(is_duplicated){
         if(!is_file){
             printf("open: %s exist in system as directory\n", filename);
-            result = UINT64_MAX;
+            result = UINT_MAX;
         }else{
             splitDIR *file_spdir = split_dir(fullpath);
             uint32_t file_de_pos = find_DE_pos(file_spdir);
@@ -323,6 +323,7 @@ uint64_t getFileLBA(const char *filename, int flags){
                 printf("run no trunc for %s\n", filename);
                 result = file_inode->fs_address;
                 printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
+                printf("address for %s is %lld\n", filename, result);
             }
             write_directory(directory);
             file_de = NULL;
@@ -350,7 +351,7 @@ uint64_t getFileLBA(const char *filename, int flags){
         new_inode = NULL;
     }else{
         printf("File %s not exist\n",filename);
-        result = UINT64_MAX;
+        result = UINT_MAX;
     }
     return result;
 }
@@ -367,7 +368,7 @@ blkcnt_t getBlocks(const char *filename){
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     int is_file = is_File(fullpath);
-    if(de_pos!= UINT32_MAX && is_file){
+    if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         result = (directory->d_inodes + inode_num)->fs_blocks;
     }else{
@@ -395,7 +396,7 @@ off_t getFileSize(const char *filename){
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     int is_file = is_File(fullpath);
-    if(de_pos!= UINT32_MAX && is_file){
+    if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         result = (directory->d_inodes + inode_num)->fs_size;
     }else{
@@ -424,7 +425,7 @@ int setFileSize(const char *filename, off_t filesize){
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     int is_file = is_File(fullpath);
-    if(de_pos!= UINT32_MAX && is_file){
+    if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_size = filesize;
         write_directory(directory);
@@ -453,7 +454,7 @@ int setFileBlocks(const char *filename, blkcnt_t count){
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     int is_file = is_File(fullpath);
-    if(de_pos!= UINT32_MAX && is_file){
+    if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_blocks = count;
         write_directory(directory);
@@ -483,7 +484,7 @@ int setFileLBA(const char *filename, uint64_t address){
     splitDIR *spdir = split_dir(fullpath);
     uint32_t de_pos = find_DE_pos(spdir);
     int is_file = is_File(fullpath);
-    if(de_pos!= UINT32_MAX && is_file){
+    if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_address = address;
         write_directory(directory);

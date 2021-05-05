@@ -337,6 +337,9 @@ int cmd_cp (int argcnt, char *argvec[])
 	do 
 		{
 		readcnt = b_read (testfs_src_fd, buf, BUFFERLEN);
+		printf("src_fd is %d\n", testfs_src_fd);
+		printf("dest_fd is %d\n", testfs_dest_fd);
+		printf("readcnt in shell is %d\n", readcnt);
 		b_write (testfs_dest_fd, buf, readcnt);
 		} while (readcnt == BUFFERLEN);
 	b_close (testfs_src_fd);
@@ -439,9 +442,12 @@ int cmd_cp2l (int argcnt, char *argvec[])
 	
 	testfs_fd = b_open (src, O_RDONLY);
 	linux_fd = open (dest, O_WRONLY | O_CREAT | O_TRUNC);
+	int count = 0;
 	do 
 		{
+			printf("run %d\n", count++);
 		readcnt = b_read (testfs_fd, buf, BUFFERLEN);
+			printf("readcount is %d\n", readcnt);
 		write (linux_fd, buf, readcnt);
 		} while (readcnt == BUFFERLEN);
 	b_close (testfs_fd);
@@ -558,8 +564,7 @@ int cmd_history (int argcnt, char *argvec[])
 	{
 	HIST_ENTRY * he;
 	int i = 0;
-	
-	
+		
 	for (i = history_base; i <= history_length; i++)
 		{
 		he = history_get(i);

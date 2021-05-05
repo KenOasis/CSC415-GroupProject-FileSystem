@@ -68,7 +68,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
             (dir_ents + i)->de_dotdot_inode = 1;
         }else{
             strcpy((dir_ents + i)->de_name, "uninitialized");
-            (dir_ents + i)->de_dotdot_inode = UINT32_MAX;
+            (dir_ents + i)->de_dotdot_inode = UINT_MAX;
         }
         (dir_ents + i)->de_inode = i;
     }
@@ -442,27 +442,10 @@ int fs_isFile(char * path){
     fullpath = strcat(fullpath,"/");
     fullpath = strcat(fullpath, path);
     int is_file = is_File(fullpath);
-    // fs_directory* directory = malloc(MINBLOCKSIZE);
-	// LBAread(directory, 1, fs_DIR.LBA_root_directory);
-	// reload_directory(directory);
-    // splitDIR *spdir = split_dir(fullpath);
-    // uint32_t de_pos = find_DE_pos(spdir);
-    // // If the path is valid(exist)
-    // if(de_pos != UINT32_MAX){
-    //     uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
-    //     unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
-    //     if(file_type == DT_REG){
-    //         is_file = 1;
-    //     }
-    // }
     free(fullpath);
-    // free_split_dir(spdir);
-    // free_directory(directory);
     free(cwd);
     cwd = NULL;
     fullpath = NULL;
-    // directory = NULL;
-    // spdir = NULL;
     return is_file;
     }//return 1 if file, 0 otherwise
 
@@ -483,27 +466,10 @@ int fs_isDir(char * path){
     fullpath = strcat(fullpath, path);
 
     int is_dir = is_Dir(fullpath);
-    // fs_directory* directory = malloc(MINBLOCKSIZE);
-	// LBAread(directory, 1, fs_DIR.LBA_root_directory);
-	// reload_directory(directory);
-    // splitDIR *spdir = split_dir(fullpath);
-    // uint32_t de_pos = find_DE_pos(spdir);
-    // // if the path is valid(exist), check file info
-    // if(de_pos != UINT32_MAX){
-    //     uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
-    //     unsigned char file_type = (directory->d_inodes + inode_num)->fs_entry_type;
-    //     if(file_type == DT_DIR){
-    //         is_dir = 1;
-    //     }
-    // }
     free(fullpath);
-    // free_split_dir(spdir);
-    // free_directory(directory);
     free(cwd);
     cwd = NULL;
     fullpath = NULL;
-    // directory = NULL;
-    // spdir = NULL;
     return is_dir;
 }		//return 1 if directory, 0 otherwise
 

@@ -58,7 +58,7 @@ int main (int argc, char *argv[])
 	char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
 	printf("cwd is %s\n", cwd);
 	char *filepath = "newFile";
-	uint32_t file_pos = getFileLBA(filepath, O_TRUNC);
+	uint32_t file_pos = getFileLBA(filepath, O_CREAT | O_TRUNC);
 	printf("file pos is %u \n", file_pos);
 	free(cwd);
 	cwd = NULL;
