@@ -19,5 +19,5 @@ freeSpace* init_freeSpace(int totalBlocks, int bytesPerBlock);
 //u_int64_t findFreeBlock(freeSpace* vector);
 u_int64_t findMultipleBlocks(int blockCount);
 void freeSomeBits(int startIndex, int count);
-u_int64_t expandFreeSection(int fileLocation, int fileSize, int newSize);
+u_int64_t expandFreeSection(int fileLocation, int fileBlockSize, int newBlockSize);
 #endif

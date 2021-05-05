@@ -63,7 +63,10 @@ int main (int argc, char *argv[])
 */
 	vector = init_freeSpace(1000, 512);
 	u_int64_t blockLocation = findMultipleBlocks(5);
+	char * buffer = malloc(1024);
+	buffer = "This is some random information";
 	u_int64_t blockLocationTwo = findMultipleBlocks(2);
+	LBAwrite(buffer, 2, blockLocationTwo);
 	blockLocation = findMultipleBlocks(6);
 	//freeSomeBits(30, 2, space);
 	blockLocationTwo = expandFreeSection(blockLocationTwo, 2, 9);

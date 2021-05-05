@@ -60,7 +60,7 @@ u_int64_t findMultipleBlocks(int blockCount) {
 						freeBit = 0;
 					}
 				}
-				LBAwrite(vector->bitVector, vector->size, 1 + vector->LBABitVector);
+				LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector);
 				//printf("free block found: %d\n", freeIndex);
 				return freeIndex;
 			}
@@ -84,11 +84,19 @@ void freeSomeBits(int startIndex, int count) {
 			position = 0;
 		}
 	}
+	LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector);
 }
 
-u_int64_t expandFreeSection(int fileLocation, int fileSize, int newSize) {
-	freeSomeBits(fileLocation, fileSize);
-	return findMultipleBlocks(newSize);
+u_int64_t expandFreeSection(int fileLocation, int fileBlockSize, int newBlockSize) {
+	freeSomeBits(fileLocation, fileBlockSize);
+	u_int64_t newLBA = findMultipleBlocks(newBlockSize);
+	if (newLBA > 0) {
+		char * buf = malloc(4096 * fileBlockSize);
+		LBAread(buf, fileBlockSize, fileLocation);
+		LBAwrite(buf, fileBlockSize, newLBA);
+		free(buf);
+	}
+	return newLBA;
 }
 
 /*int main() {
