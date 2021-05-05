@@ -527,14 +527,22 @@ int fs_delete(char* filename){
     if(strcmp(fullpath, "root/") != 0)
     fullpath = strcat(fullpath, "/");
     fullpath = strcat(fullpath, filename);
-    int is_File = fs_isFile(fullpath);
+    int is_File = fs_isFile(filename);
     splitDIR *spdir = split_dir(fullpath);
     if(is_File == 1){
         uint32_t de_pos = find_DE_pos(spdir);
         fs_de *de = (directory->d_dir_ents + de_pos);
         uint32_t inode_pos = de->de_inode;
         de->de_dotdot_inode = UINT32_MAX;
+        fs_inode *inode = (directory->d_inodes + inode_pos);
         /*to-do free space of the file (inode find address*/
+        inode->fs_size = sizeof(fs_de);
+        inode->fs_blksize = 0;
+        inode->fs_blocks = 0;
+        inode->fs_createtime = time(NULL);
+        inode->fs_modtime = time(NULL);
+        inode->fs_accesstime = time(NULL);
+        inode->fs_entry_type = DT_DIR;
         write_directory(directory);
         success_delete = 0;
     }

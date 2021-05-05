@@ -30,8 +30,6 @@
 #include "mfs.h"
 #include "dir.h"
 
-
-
 /***************  START LINUX TESTING CODE FOR SHELL ***************/
 #define TEMP_LINUX 0  //MUST be ZERO for working with your file system
 #if (TEMP_LINUX == 1)
@@ -114,11 +112,11 @@
 
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
 #define CMDLS_ON	1
-#define CMDCP_ON	0
+#define CMDCP_ON	1
 #define CMDMV_ON	0
 #define CMDMD_ON	1
 #define CMDRM_ON	1
-#define CMDCP2L_ON	0
+#define CMDCP2L_ON	1
 #define CMDCP2FS_ON	1
 #define CMDCD_ON	1
 #define CMDPWD_ON	1
@@ -166,8 +164,10 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 #if (CMDLS_ON == 1)				
 	if (dirp == NULL)	//get out if error
 		return (-1);
+	
 	struct fs_diriteminfo * di;
 	struct fs_stat statbuf;
+	
 	di = fs_readdir (dirp);
 	printf("\n");
 	while (di != NULL) 
@@ -197,7 +197,6 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 ****************************************************/
 int cmd_ls (int argcnt, char *argvec[])
 	{
-
 #if (CMDLS_ON == 1)				
 	int option_index;
 	int c;
@@ -235,8 +234,10 @@ int cmd_ls (int argcnt, char *argvec[])
 		{	
 		c = getopt_long(argcnt, argvec, "alh",
 				long_options, &option_index);
+				
 		if (c == -1)
 		   break;
+
 		switch (c) {
 			case 0:			//flag was set, ignore
 			   printf("Unknown option %s", long_options[option_index].name);
@@ -260,6 +261,8 @@ int cmd_ls (int argcnt, char *argvec[])
 				break;
 			}
 		}
+	
+	
 	if (optind < argcnt)
 		{
 		//processing arguments after options

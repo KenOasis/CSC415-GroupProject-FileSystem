@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <string.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include "fsLow.h"
 #include "freeSpace.h"
 #ifndef DIR_MAXLENGTH

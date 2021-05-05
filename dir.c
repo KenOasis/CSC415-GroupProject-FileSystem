@@ -2,7 +2,6 @@
 #include "fsLow.h"
 #include "dir.h"
 #include "b_io.h"
-
 /****************************************************
 * @parameters 
 *   @type fs_directory*: directory 
@@ -313,6 +312,7 @@ uint64_t getFileLBA(const char *filename, int flags){
             fs_inode *file_inode = (directory->d_inodes + file_de_pos);
             strcpy(file_de->de_name, filename);
             if((flags & O_TRUNC) == O_TRUNC){
+                    printf("run trunc for %s\n", filename);
             // ** To-do free the old LBA space
                 file_inode->fs_blocks = 0;
                 file_inode->fs_size = 0;
@@ -320,7 +320,9 @@ uint64_t getFileLBA(const char *filename, int flags){
                 result = 666;
                 file_inode->fs_address = result;
             }else{
+                printf("run no trunc for %s\n", filename);
                 result = file_inode->fs_address;
+                printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
             }
             write_directory(directory);
             file_de = NULL;
@@ -328,6 +330,7 @@ uint64_t getFileLBA(const char *filename, int flags){
         }
     }else if((flags & O_CREAT) == O_CREAT){
         // No same name dir or file exist
+        printf("run new at open for %s\n", filename);
         uint32_t new_de_pos = find_free_dir_ent(directory);
         fs_de *new_de = (directory->d_dir_ents + new_de_pos);
         new_de -> de_dotdot_inode = parent_pos;
@@ -337,6 +340,10 @@ uint64_t getFileLBA(const char *filename, int flags){
         //Allocated space (LBA) for file 
         // Test only
         new_inode->fs_address = 888;
+        new_inode->fs_size = 0;
+        new_inode->fs_blocks = 10;
+        new_inode->fs_blksize = MINBLOCKSIZE;
+        //End of Test data
         result = new_inode->fs_address;
         write_directory(directory);
         new_de = NULL;
