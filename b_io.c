@@ -106,10 +106,13 @@ int b_open (char * filename, int flags)
 	
 	// O_CREAT
 	if (flags & O_CREAT) {
-		// fcbArray[returnFd].startingLBA = findMultipleBlocks(INITIALBLOCKS);	// initialize 10 blocks for new file
-		createFile(filename); // -1 error, otherwise startingLBA
+		int createFileReturnedValue = createFile(filename); // return -1 for error, otherwise return startingLBA. If the file existing, return the startingLBA of the existing file.
+		if (createFileReturnedValue == -1) {
+			printf("ERROR: Failed to create the file.\n");
+			return -1;			
+		}
 		fcbArray[returnFd].startingLBA = 1; //fake
-	} else {
+		// fcbArray[returnFd].startingLBA = createFileReturnedValue;	
 		// fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
 		// fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);	// convert filesize to how many blocks
 	}
@@ -398,13 +401,12 @@ void b_close (int fd)
 		fcbArray[fd].fileSize += fcbArray[fd].buflen;
 		fcbArray[fd].writeBufferNonEmpty = false;
 	}
-	// update a few info about the file
-	createFile(fcbArray[fd].fileName); // move
+	// update a few meta info about the file to directory
 	setFileSize(fcbArray[fd].fileName, fcbArray[fd].fileSize);
 	setFileBlock(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
 	setFileLBA(fcbArray[fd].fileName, fcbArray[fd].startingLBA);
 
-	// Reset values
+	// reset values
 	fcbArray[fd].buflen = 0;
 	fcbArray[fd].index = 0;
 	fcbArray[fd].cursorInDisk = -1;
