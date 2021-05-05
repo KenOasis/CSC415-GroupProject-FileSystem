@@ -32,8 +32,9 @@
 
 typedef struct b_fcb
 	{
+	char * fileName;	// file name
 	int fcbStatus;		// -1 means available, 1 means not available
-	int readWriteFlags;	// 00 indicate read only, 01 indicate write only
+	int readWriteFlags;	// RDONLY, WRONLY, RW
 	int startingLBA;	//the LBA of the first block
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
@@ -106,6 +107,7 @@ int b_open (char * filename, int flags)
 	// O_CREAT
 	if (flags & O_CREAT) {
 		// fcbArray[returnFd].startingLBA = findMultipleBlocks(INITIALBLOCKS);	// initialize 10 blocks for new file
+		createFile(filename); // -1 error, otherwise startingLBA
 		fcbArray[returnFd].startingLBA = 1; //fake
 	} else {
 		// fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
@@ -344,6 +346,32 @@ int b_read (int fd, char * buffer, int count)
 	return (bytesReturned);	
 	}
 
+// Interface to seek a specific position in file
+// We will move the cursorInDisk accordingly
+int b_seek(int fd, off_t offset, int whence){
+	switch (whence)
+	{
+	/* Set the offset to 0 where the file begin 
+	   And to move the positions from the beginning of the file. */
+	case SEEK_SET:
+		offset = 0;
+		fd += offset;
+		break;
+	// To add the current position based on offset and write to disk.
+	case SEEK_CUR:
+		offset += fd;		
+		LBAwrite(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);	
+		break;
+	// To move the positions from the end of the file and write to disk.
+	case SEEK_END:
+		offset += fd;
+		LBAwrite(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);
+		break;
+	}
+	LBAread(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);
+	return offset;
+}
+
 // Interface to Close the file	
 void b_close (int fd)
 {
@@ -371,7 +399,10 @@ void b_close (int fd)
 		fcbArray[fd].writeBufferNonEmpty = false;
 	}
 	// update a few info about the file
-
+	createFile(fcbArray[fd].fileName); // move
+	setFileSize(fcbArray[fd].fileName, fcbArray[fd].fileSize);
+	setFileBlock(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
+	setFileLBA(fcbArray[fd].fileName, fcbArray[fd].startingLBA);
 
 	// Reset values
 	fcbArray[fd].buflen = 0;
