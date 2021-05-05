@@ -127,7 +127,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
     //find the parent pos and check whether have duplicated name 
     uint32_t parent_pos = find_DE_pos(spdir);
     int duplicated_name = is_duplicated_dir(parent_pos, new_dir_name);
-    if(parent_pos != UINT32_MAX){
+    if(parent_pos != UINT_MAX){
         if(duplicated_name){
             printf("mkdir: %s: File exists\n", new_dir_name);
         }else{
@@ -199,7 +199,7 @@ int fs_rmdir(const char *pathname){
         }
         if(is_empty_dir){
             // de-connected it to the parent node (which is free from directory)
-            de->de_dotdot_inode = UINT32_MAX;
+            de->de_dotdot_inode = UINT_MAX;
             success_rmdir = 1;
             //write back changed directory info to LBA
             write_directory(directory);
@@ -237,7 +237,7 @@ fdDir * fs_opendir(const char *name){
     fdDir *dirp = malloc(sizeof(fdDir));
     dirp->cur_pos = 0;
     uint32_t de_pos = find_DE_pos(spdir);
-    if(de_pos == UINT32_MAX){
+    if(de_pos == UINT_MAX){
         char *filename = *(spdir->dir_names + (spdir->length - 1));
         printf("no such file or direcotry: %s\n", filename);
         free_split_dir(spdir);
@@ -499,7 +499,7 @@ int fs_delete(char* filename){
         uint32_t de_pos = find_DE_pos(spdir);
         fs_de *de = (directory->d_dir_ents + de_pos);
         uint32_t inode_pos = de->de_inode;
-        de->de_dotdot_inode = UINT32_MAX;
+        de->de_dotdot_inode = UINT_MAX;
         fs_inode *inode = (directory->d_inodes + inode_pos);
         /*to-do free space of the file (inode find address*/
         inode->fs_size = sizeof(fs_de);
