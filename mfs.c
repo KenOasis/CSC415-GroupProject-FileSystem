@@ -137,7 +137,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
             fs_inode *inode = (directory->d_inodes + free_dir_ent);
             inode->fs_entry_type = DT_DIR;
             strcpy(de->de_name, new_dir_name);
-            write_direcotry(directory);
+            write_directory(directory);
             de = NULL;
             inode = NULL;
             success_status = 0;
@@ -202,7 +202,7 @@ int fs_rmdir(const char *pathname){
             de->de_dotdot_inode = UINT32_MAX;
             success_rmdir = 1;
             //write back changed directory info to LBA
-            write_direcotry(directory);
+            write_directory(directory);
         }else{
             printf("%s is not a empty directory\n", de->de_name);
         }
@@ -535,7 +535,7 @@ int fs_delete(char* filename){
         uint32_t inode_pos = de->de_inode;
         de->de_dotdot_inode = UINT32_MAX;
         /*to-do free space of the file (inode find address*/
-        write_direcotry(directory);
+        write_directory(directory);
         success_delete = 0;
     }
     free_directory(directory);

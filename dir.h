@@ -108,7 +108,7 @@ int reload_directory(fs_directory *directory);
 *  Destructor of the directory to free the memory
 *  of the struct type directory
 ****************************************************/
-int write_direcotry(fs_directory *directory);
+int write_directory(fs_directory *directory);
 
 /****************************************************
 * @parameters 
@@ -198,9 +198,9 @@ int setFileBlocks(const char *filename, blkcnt_t count);
 
 int setFileLBA(const char *filename, uint64_t Address);
 
-int updateAccessTime(fs_de *dir_ent);
+int updateAccessTime(uint32_t inode);
 
-int updateModTime(fs_de *dir_ent);
+int updateModTime(uint32_t inode);
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/
