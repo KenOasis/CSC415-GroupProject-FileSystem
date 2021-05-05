@@ -22,27 +22,26 @@
 #include <fcntl.h>
 #include "b_io.h"
 #include <stdbool.h>		// for write buffer indicator
-#include "fsLow.h"  // import MINBLOCKSIZE 512
-#include <math.h>	// for ceil()
+#include "fsLow.h"  		// import MINBLOCKSIZE 512
+#include <math.h>			// for ceil()
 
 #define MAXFCBS 20
 #define BUFSIZE 512
 #define GETMOREBLOCKS 10
-#define INITIALBLOCKS 10
 
 typedef struct b_fcb
 	{
 	char * fileName;	// file name
 	int fcbStatus;		// -1 means available, 1 means not available
 	int readWriteFlags;	// RDONLY, WRONLY, RW
-	int startingLBA;	//the LBA of the first block
+	uint64_t startingLBA;	//the LBA of the first block
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
 	bool writeBufferNonEmpty;	// track if we need to flush write buffer
 	int cursorInDisk;	// the cursor that tracks which block we are on disk
-	int fileSize;	// the current size of the file
-	int fileBlocksAllocated;	// total number of the blocks that the file allocated
+	off_t fileSize;	// the current size of the file
+	blkcnt_t fileBlocksAllocated;	// total number of the blocks that the file allocated
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
@@ -77,6 +76,7 @@ int b_getFCB ()
 	return -1;  //all in use
 }
 	
+
 // Interface to open a buffered file
 int b_open (char * filename, int flags)
 {
@@ -94,35 +94,41 @@ int b_open (char * filename, int flags)
 	if (fcbArray[returnFd].buf  == NULL)
 	{
 		// very bad, we can not allocate our buffer
-		fcbArray[returnFd].fcbStatus = -1; 	// Free FCB
+		fcbArray[returnFd].fcbStatus = -1; 	// free FCB
 		return -1;
 	}
 	
-	// initialize other fcb variables
+	// initialize other fcb properties
+	fcbArray[returnFd].fileName = filename; // save the filename
 	fcbArray[returnFd].buflen = 0; 			// have not read anything yet
 	fcbArray[returnFd].index = 0;			// have not read anything yet
 	fcbArray[returnFd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
 	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
 	
-	// O_CREAT
-	if (flags & O_CREAT) {
-		int createFileReturnedValue = createFile(filename); // return -1 for error, otherwise return startingLBA. If the file existing, return the startingLBA of the existing file.
-		if (createFileReturnedValue == -1) {
-			printf("ERROR: Failed to create the file.\n");
-			return -1;			
-		}
-		fcbArray[returnFd].startingLBA = 1; //fake
-		// fcbArray[returnFd].startingLBA = createFileReturnedValue;	
-		// fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
-		// fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);	// convert filesize to how many blocks
-	}
+	// // O_CREAT
+	// if (flags & O_CREAT) {
+	// 	int createFileReturnedValue = open_file(filename); 
+	// 	if (createFileReturnedValue == -1) {
+	// 		printf("ERROR: Failed to create the file.\n");
+	// 		return -1;			
+	// 	}
+	// 	fcbArray[returnFd].startingLBA = 1; //fake
+	// 	// fcbArray[returnFd].startingLBA = createFileReturnedValue;	
+	// 	// fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
+	// 	// fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);	// convert filesize to how many blocks
+	// }
 
-	// O_TRUNC
-	if (flags & O_TRUNC) {
-		fcbArray[returnFd].fileSize = 0;
-	} else {
-		// fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
-	}
+	// // O_TRUNC
+	// if (flags & O_TRUNC) {
+	// 	fcbArray[returnFd].fileSize = 0;
+	// } else {
+	// 	// fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
+	// }
+
+	// Get the starting LBA, blocks allocated, file size of the file by passing filename, O_CREAT/O_TRUNC flag to directory fucntion.
+	fcbArray[returnFd].startingLBA = getFileLBA(filename, flags); // If the file existing, return the starting LBA of the existing file. If not, it will create a file and retur its starting LBA.
+	fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);
+	fcbArray[returnFd].fileSize = getFileSize(filename);
 
 	// O_RDWR
 	if ((flags & O_ACCMODE) == O_RDWR) {
@@ -222,9 +228,9 @@ int b_write (int fd, char * buffer, int count)
 			LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
 			bytesWrite += fcbArray[fd].buflen;
 			fcbArray[fd].buflen = 0;
-			fileUsedBlocks += 1; // Increment the fileUsedBlocks by 1
-			fcbArray[fd].cursorInDisk += 1;	// Move the block in disk to the next
-			fcbArray[fd].fileSize += MINBLOCKSIZE; // Increment the fileSize by 512
+			fileUsedBlocks += 1; // We have used 1 more block
+			fcbArray[fd].cursorInDisk += 1;	// Move the cursor in disk to the next block
+			fcbArray[fd].fileSize += MINBLOCKSIZE; // Increment the file size by 512
 		}
 	}
 
@@ -403,7 +409,7 @@ void b_close (int fd)
 	}
 	// update a few meta info about the file to directory
 	setFileSize(fcbArray[fd].fileName, fcbArray[fd].fileSize);
-	setFileBlock(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
+	setFileBlocks(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
 	setFileLBA(fcbArray[fd].fileName, fcbArray[fd].startingLBA);
 
 	// reset values
