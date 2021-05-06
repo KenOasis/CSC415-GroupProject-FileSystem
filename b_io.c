@@ -344,8 +344,9 @@ int b_read (int fd, char * buffer, int count)
 		
 	if (part2 > 0) 	//blocks to copy direct to callers buffer
 		{
-		// printf("\npart2: %d\n", part2);
-		bytesRead = MINBLOCKSIZE * LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		// LBAread always returns 0, we will assume it succeeds
+		LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk); 
+		bytesRead = MINBLOCKSIZE * numberOfBlocksToCopy;
 		// printf("bytesRead: %d\n", bytesRead);
 		part2 = bytesRead;  //might be less if we hit the end of the file
 		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
@@ -357,7 +358,9 @@ int b_read (int fd, char * buffer, int count)
 		{
 		// printf("\npart3: %d\n", part3);		
 		//Read 1 block into our buffer
-		bytesRead = MINBLOCKSIZE * LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		// LBAread always returns 0, we will assume it succeeds
+		LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		bytesRead = MINBLOCKSIZE * 1;
 		// printf("bytesRead: %d\n", bytesRead);
 		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
 		fcbArray[fd].cursorInDisk += 1;	//Move to the next block
