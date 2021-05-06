@@ -108,26 +108,6 @@ int b_open (char * filename, int flags)
 	fcbArray[returnFd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
 	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
 	fcbArray[returnFd].bytesRead = 0;
-	
-	// // O_CREAT
-	// if (flags & O_CREAT) {
-	// 	int createFileReturnedValue = open_file(filename); 
-	// 	if (createFileReturnedValue == -1) {
-	// 		printf("ERROR: Failed to create the file.\n");
-	// 		return -1;			
-	// 	}
-	// 	fcbArray[returnFd].startingLBA = 1; //fake
-	// 	// fcbArray[returnFd].startingLBA = createFileReturnedValue;	
-	// 	// fcbArray[returnFd].startingLBA = getLBA(filename);	// call directory to get LBA
-	// 	// fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);	// convert filesize to how many blocks
-	// }
-
-	// // O_TRUNC
-	// if (flags & O_TRUNC) {
-	// 	fcbArray[returnFd].fileSize = 0;
-	// } else {
-	// 	// fcbArray[returnFd].fileSize = getFileSize(filename);	// call directory to get file size
-	// }
 
 	// Get the starting LBA, blocks allocated, file size of the file by passing filename, O_CREAT/O_TRUNC flag to directory fucntion.
 	fcbArray[returnFd].startingLBA = getFileLBA(filename, flags); // If the file existing, return the starting LBA of the existing file. If not, it will create a file and retur its starting LBA.
@@ -149,8 +129,6 @@ int b_open (char * filename, int flags)
 		fcbArray[returnFd].readWriteFlags = -1;	// -1 means not initialized
 	}
 
-	// printf("b_open size: %ld\n", fcbArray[returnFd].fileSize);
-	// printf("read write flag: %d\n", fcbArray[returnFd].readWriteFlags);
 	return (returnFd);
 }
 
@@ -189,7 +167,6 @@ int b_write (int fd, char * buffer, int count)
 	// Convert fileSize to how many blocks the file is taking (this is not the total blocks allocated)
 	fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
 
-	// printf("b_write count: %d\n", count);
 	// Writing to the file from caller's buffer until reaching the end
 	while (count > 0) {
 		// number of bytes needed to fill the buffer
@@ -219,7 +196,7 @@ int b_write (int fd, char * buffer, int count)
 		if (fcbArray[fd].buflen == BUFSIZE) {
 
 			// check if all allocated blocks have been used
-			// if yes, call free space manager to get a new startingLBA
+			// if yes, call free space manager to get 10 more blocks
 			if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { 
 				// int res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
 				int res = 888; // fake
@@ -227,7 +204,10 @@ int b_write (int fd, char * buffer, int count)
 					printf("ERROR: Write failed");
 					return -1;
 				}
-				fcbArray[fd].startingLBA = res; // Update the startingLBA
+
+				// Update LBA and blocks allocated in fcb
+				fcbArray[fd].startingLBA = res;
+				fcbArray[fd].fileBlocksAllocated += 10;	
 			}
 
 			LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
@@ -236,6 +216,11 @@ int b_write (int fd, char * buffer, int count)
 			fileUsedBlocks += 1; // We have used 1 more block
 			fcbArray[fd].cursorInDisk += 1;	// Move the cursor in disk to the next block
 			fcbArray[fd].fileSize += MINBLOCKSIZE; // Increment the file size by 512
+
+			// Update the directory LBA after getting a new LBA for where the file is located in case of a crash before the b_close
+			setFileSize(fcbArray[fd].fileName, fcbArray[fd].fileSize);
+			setFileBlocks(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
+			setFileLBA(fcbArray[fd].fileName, fcbArray[fd].startingLBA);
 		}
 	}
 
@@ -301,10 +286,6 @@ int b_read (int fd, char * buffer, int count)
 	if (count > remainingBytesToRead) {
 		count = remainingBytesToRead;
 	}
-
-	// printf("b_read fcbArray[fd].startingLBA: %ld\n", fcbArray[fd].startingLBA);
-	// printf("b_read fcbArray[fd].fileBlocksAllocated: %ld\n", fcbArray[fd].fileBlocksAllocated);
-	// printf("b_read fcbArray[fd].fileSize : %ld\n", fcbArray[fd].fileSize);
 	
 	// number of bytes available to copy from buffer
 	remainingBytesInMyBuffer = fcbArray[fd].buflen - fcbArray[fd].index;	
@@ -337,31 +318,26 @@ int b_read (int fd, char * buffer, int count)
 
 	if (part1 > 0)	// memcpy part 1
 		{
-		// printf("\npart1: %d\n", part1);
 		memcpy (buffer, fcbArray[fd].buf + fcbArray[fd].index, part1);
 		fcbArray[fd].index = fcbArray[fd].index + part1;
 		}
 		
 	if (part2 > 0) 	//blocks to copy direct to callers buffer
 		{
-		// printf("\npart2: %d\n", part2);
-		bytesRead = MINBLOCKSIZE * LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
-		// printf("bytesRead: %d\n", bytesRead);
+		// LBAread always returns 0, we will assume it succeeds
+		LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk); 
+		bytesRead = MINBLOCKSIZE * numberOfBlocksToCopy;
 		part2 = bytesRead;  //might be less if we hit the end of the file
-		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
 		fcbArray[fd].cursorInDisk += numberOfBlocksToCopy; 
-		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
 		}
 		
 	if (part3 > 0)	//We need to refill our buffer to copy more bytes to user
-		{
-		// printf("\npart3: %d\n", part3);		
+		{	
 		//Read 1 block into our buffer
-		bytesRead = MINBLOCKSIZE * LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
-		// printf("bytesRead: %d\n", bytesRead);
-		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
+		// LBAread always returns 0, we will assume it succeeds
+		LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		bytesRead = MINBLOCKSIZE * 1;
 		fcbArray[fd].cursorInDisk += 1;	//Move to the next block
-		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
 		
 		// we just did a read into our buffer - reset the offset and buffer length.
 		fcbArray[fd].index = 0;
@@ -410,11 +386,10 @@ int b_seek(int fd, off_t offset, int whence){
 // Interface to Close the file	
 void b_close (int fd)
 {
-	// printf("writeBufferNonEmpty: %d\n", fcbArray[fd].writeBufferNonEmpty);
 	// Add the end of the file remained in the write buffer
 	// When the indicator is true, we know that there are some remaining to write
 	if (fcbArray[fd].writeBufferNonEmpty) {
-		// printf("clsoe: buffer non empty\n");
+
 		// Convert fileSize to how many blocks the file is taking
 		int fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
 		// check if all allocated blocks have been used
@@ -424,16 +399,15 @@ void b_close (int fd)
 			if (res == -1) {
 				printf("ERROR: Write failed");
 			}
-			fcbArray[fd].startingLBA = res; // Update the startingLBA
+			// Update LBA and blocks allocated in fcb
+			fcbArray[fd].startingLBA = res;
+			fcbArray[fd].fileBlocksAllocated += 10;	
 		}
-		// printf("fcbArray[fd].startingLBA: %d\n", fcbArray[fd].startingLBA);
-		// printf("fileUsedBlocks: %d\n", fileUsedBlocks);
+
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
 
 		// update
-		// printf("filesize:%ld\n", fcbArray[fd].fileSize);
 		fcbArray[fd].fileSize += fcbArray[fd].buflen;
-		// printf("filesize:%ld\n", fcbArray[fd].fileSize);
 		fcbArray[fd].writeBufferNonEmpty = false;
 	}
 	// update a few meta info about the file to directory
@@ -441,7 +415,7 @@ void b_close (int fd)
 	setFileBlocks(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
 	setFileLBA(fcbArray[fd].fileName, fcbArray[fd].startingLBA);
 
-	// reset values
+	// reset fcb values
 	fcbArray[fd].buflen = 0;
 	fcbArray[fd].index = 0;
 	fcbArray[fd].cursorInDisk = -1;

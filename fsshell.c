@@ -113,7 +113,7 @@
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
 #define CMDLS_ON	1
 #define CMDCP_ON	1
-#define CMDMV_ON	0
+#define CMDMV_ON	1
 #define CMDMD_ON	1
 #define CMDRM_ON	1
 #define CMDCP2L_ON	1
@@ -177,7 +177,7 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 			if (fllong)
 				{
 				fs_stat (di->d_name, &statbuf);
-				printf ("%s    %9ld   %s\n", fs_isDir(di->d_name)?"D":"-", statbuf.st_size, di->d_name);
+				printf ("%s    %9ld   %s    %s\n", fs_isDir(di->d_name)?"D":"-", statbuf.st_size, display_time(statbuf.st_modtime), di->d_name);
 				}
 			else
 				{
@@ -351,8 +351,13 @@ int cmd_cp (int argcnt, char *argvec[])
 int cmd_mv (int argcnt, char *argvec[])
 	{
 #if (CMDMV_ON == 1)				
-	return -99;
 	// **** TODO ****  For you to implement	
+	if (argcnt != 3){
+		printf("Usage: mv src[filename] path[directory]\n");
+		return -1;
+	}
+
+	return(fs_move(argvec[1], argvec[2]));
 #endif
 	return 0;
 	}

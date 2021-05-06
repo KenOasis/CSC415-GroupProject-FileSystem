@@ -30,7 +30,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
 
     fs_de *dir_ents = malloc(blockCountDE * MINBLOCKSIZE);
 
-    // uint64_t LBA_inodes = findMultipleBlocks(blockCountInode,vector);
+    // uint64_t LBA_inodes = findMultipleBlocks(blockCountInode);
     uint64_t LBA_inodes = 128; // temperary for test
     //Initialize inodes
     for(int i = 0; i < actualNumInode; ++i){
@@ -72,7 +72,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
         }
         (dir_ents + i)->de_inode = i;
     }
-    // uint64_t LBA_DEs = findMultipleBlocks(blockCountDE, vector);
+    // uint64_t LBA_DEs = findMultipleBlocks(blockCountDE);
     uint64_t LBA_dir_ents = 512; // for test only
 
     LBAwrite(dir_ents, blockCountDE, LBA_dir_ents);
@@ -139,6 +139,8 @@ int fs_mkdir(const char *pathname, mode_t mode){
             inode->fs_entry_type = DT_DIR;
             strcpy(de->de_name, new_dir_name);
             write_directory(directory);
+            updateModTime(parent_pos);
+            updateModTime(free_dir_ent);
             de = NULL;
             inode = NULL;
             success_status = 0;
@@ -200,10 +202,12 @@ int fs_rmdir(const char *pathname){
         }
         if(is_empty_dir){
             // de-connected it to the parent node (which is free from directory)
+            uint32_t parent_pos = de->de_dotdot_inode;
             de->de_dotdot_inode = UINT_MAX;
             success_rmdir = 1;
             //write back changed directory info to LBA
             write_directory(directory);
+            updateModTime(parent_pos);
         }else{
             printf("%s is not a empty directory\n", de->de_name);
         }
@@ -226,10 +230,10 @@ int fs_rmdir(const char *pathname){
 /****************************************************
 * @parameters 
 *   @type const char* : the dir (fullpath) need to be 
-*												opened and iterated.
+*		                opened and iterated.
 * @return
 *   @type fdDir* : a struct hold the current direcoty
-*									info to iterate the children
+*	info to iterate the children
 * This function opens a dir(fullpath) to iterate the
 *	children of them
 ****************************************************/
@@ -449,8 +453,10 @@ int fs_delete(char* filename){
         uint32_t de_pos = find_DE_pos(spdir);
         fs_de *de = (directory->d_dir_ents + de_pos);
         uint32_t inode_pos = de->de_inode;
+        uint32_t parent_pos = de->de_dotdot_inode;
         de->de_dotdot_inode = UINT_MAX;
         fs_inode *inode = (directory->d_inodes + inode_pos);
+        // free  inode->fs_address (this is the LBA to free)
         /*to-do free space of the file (inode find address*/
         inode->fs_size = sizeof(fs_de);
         inode->fs_blksize = 0;
@@ -460,6 +466,7 @@ int fs_delete(char* filename){
         inode->fs_accesstime = time(NULL);
         inode->fs_entry_type = DT_DIR;
         write_directory(directory);
+        updateModTime(parent_pos);
         success_delete = 0;
     }
     free_directory(directory);
@@ -509,4 +516,67 @@ int fs_stat(const char *path, struct fs_stat *buf){
     directory = NULL;
     inode = NULL;
     return 0;
+}
+
+
+int fs_move(const char *src, const char* dest){
+    int result = 0;
+    char* cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
+    char* cwd_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    char* src_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+
+    char* dest_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    strcpy(cwd_buf, cwd);
+    strcpy(src_buf, src);
+    strcpy(dest_buf, dest);
+    char* src_abslpath = get_absolute_path(cwd_buf, src_buf);
+    char* dest_abslpath = get_absolute_path(cwd_buf, dest_buf);
+    splitDIR *src_spdir = split_dir(src_abslpath);
+    splitDIR *dest_spdir = split_dir(dest_abslpath);
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+
+	LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	reload_directory(directory);
+    if(!is_Dir(dest_abslpath)){
+        printf("mv: %s is not a available directory location\n", dest);
+        result = -2;  
+    }else if(!is_File(src_abslpath)){
+        printf("mv: %s is not exist a file\n", src);
+        result = -1;
+    }else{
+        uint32_t src_de_pos = find_DE_pos(src_spdir);
+        uint32_t dest_de_pos = find_DE_pos(dest_spdir);
+        char *src_filename = *(src_spdir->dir_names + src_spdir->length - 1);
+        int is_duplicated = is_duplicated_dir(dest_de_pos, src_filename);
+        if(is_duplicated){
+            printf("mv: %s (same name file) is exist in the destination directory\n", src_filename);
+            result = -3;
+        }else{
+            //de_pos is eqaul to inode_pos (value)
+            updateModTime(src_de_pos);
+            updateModTime(dest_de_pos);
+            fs_de *src_de = directory->d_dir_ents + src_de_pos;
+            src_de->de_dotdot_inode = dest_de_pos;
+            write_directory(directory);
+        }
+    } 
+    free(cwd);
+    free(cwd_buf);
+    free(src_buf);
+    free(dest_buf);
+    free(src_abslpath);
+    free(dest_abslpath);
+    free_split_dir(src_spdir);
+    free_split_dir(dest_spdir);
+    free_directory(directory);
+    cwd = NULL;
+    cwd_buf = NULL;
+    src_buf = NULL;
+    dest_buf = NULL;
+    src_abslpath = NULL;
+    dest_abslpath = NULL;
+    src_spdir = NULL;
+    dest_spdir = NULL;
+    directory = NULL;
+    return result;
 }
