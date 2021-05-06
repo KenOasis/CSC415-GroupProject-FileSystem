@@ -220,7 +220,7 @@ int updateModTime(uint32_t inode);
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/
-void display_time(time_t t); 
+char* display_time(time_t t); 
 
 /****************************************************
 *  helper function to format accessmode output, test only

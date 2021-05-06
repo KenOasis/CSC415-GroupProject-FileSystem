@@ -92,7 +92,7 @@ uint64_t fs_init();
 *		@type mode_t: a 3digit oct number represent the 
 *									access mode ie. 0777;
 * @return
-*   @type int: 1 means succes, 0 means fail
+*   @type int: 1 means success, 0 means fail
 * This function create a new direcotry 
 ****************************************************/
 int fs_mkdir(const char *pathname, mode_t mode);
@@ -102,7 +102,7 @@ int fs_mkdir(const char *pathname, mode_t mode);
 *   @type const char* : the dir name to be removed
 * This function remove a directory (if exist)
 * @return
-*   @type int: 1 means succes, 0 means fail
+*   @type int: 1 means success, 0 means fail
 * !Need to validte whether is direcotry before execute
 ****************************************************/
 int fs_rmdir(const char *pathname);
@@ -223,4 +223,5 @@ struct fs_stat
 ****************************************************/
 int fs_stat(const char *path, struct fs_stat *buf);
 
+int fs_move(const char *src, const char* path);
 #endif

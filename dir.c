@@ -587,37 +587,33 @@ int free_stack(stringStack *stack){
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/
-void display_time(time_t t){
-    
-    if (t == -1) {
-        
-        puts("The time() function failed");
-        exit(EXIT_FAILURE);
-    }
-    
-    struct tm *ptm = localtime(&t);
-    
-    if (ptm == NULL) {
-        
-        puts("The localtime() function failed");
-        exit(EXIT_FAILURE);
-    }
+char* display_time(time_t t){
+    char *time_str = malloc(sizeof(char) * 32);
+    struct tm *ptm = NULL;
     char *month_str[12] = {
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec"
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
     };
-    printf("%s %02d %02d:%02d\n", month_str[ptm->tm_mon],ptm->tm_mday, ptm->tm_hour, 
+    if(t != -1){
+        ptm = localtime(&t);
+    }
+    
+    if (ptm != NULL) {
+         sprintf(time_str, "%s %02d %02d:%02d", month_str[ptm->tm_mon],ptm->tm_mday, ptm->tm_hour, 
            ptm->tm_min);
+    }
+    ptm = NULL;
+    return time_str;
 }
 
 /****************************************************

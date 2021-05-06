@@ -510,3 +510,64 @@ int fs_stat(const char *path, struct fs_stat *buf){
     inode = NULL;
     return 0;
 }
+
+
+int fs_move(const char *src, const char* dest){
+    int result = 0;
+    char* cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
+    char* cwd_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    char* src_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+
+    char* dest_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    strcpy(cwd_buf, cwd);
+    strcpy(src_buf, src);
+    strcpy(dest_buf, dest);
+    char* src_abslpath = get_absolute_path(cwd_buf, src_buf);
+    char* dest_abslpath = get_absolute_path(cwd_buf, dest_buf);
+    splitDIR *src_spdir = split_dir(src_abslpath);
+    splitDIR *dest_spdir = split_dir(dest_abslpath);
+    fs_directory* directory = malloc(MINBLOCKSIZE);
+
+	LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	reload_directory(directory);
+    if(!is_Dir(dest_abslpath)){
+        printf("mv: %s is not a available directory location\n", dest);
+        result = -2;  
+    }else if(!is_File(src_abslpath)){
+        printf("mv: %s is not exist a file\n", src);
+        result = -1;
+    }else{
+        uint32_t src_de_pos = find_DE_pos(src_spdir);
+        uint32_t dest_de_pos = find_DE_pos(dest_spdir);
+        char *src_filename = *(src_spdir->dir_names + src_spdir->length - 1);
+        int is_duplicated = is_duplicated_dir(dest_de_pos, src_filename);
+        if(is_duplicated){
+            printf("mv: %s (same name file) is exist in the destination directory\n", src_filename);
+            result = -3;
+        }else{
+            //de_pos is eqaul to inode_pos (value)
+            fs_de *src_de = directory->d_dir_ents + src_de_pos;
+            src_de->de_dotdot_inode = dest_de_pos;
+            write_directory(directory);
+        }
+    } 
+    free(cwd);
+    free(cwd_buf);
+    free(src_buf);
+    free(dest_buf);
+    free(src_abslpath);
+    free(dest_abslpath);
+    free_split_dir(src_spdir);
+    free_split_dir(dest_spdir);
+    free_directory(directory);
+    cwd = NULL;
+    cwd_buf = NULL;
+    src_buf = NULL;
+    dest_buf = NULL;
+    src_abslpath = NULL;
+    dest_abslpath = NULL;
+    src_spdir = NULL;
+    dest_spdir = NULL;
+    directory = NULL;
+    return result;
+}
