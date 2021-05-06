@@ -342,9 +342,14 @@ uint64_t getFileLBA(const char *filename, int flags){
             strcpy(file_de->de_name, filename);
             if((flags & O_TRUNC) == O_TRUNC){
             // ** To-do free the old LBA space
+            // file_inode->fs_address
+            // file_inode->fs_blocks
                 file_inode->fs_blocks = 0;
                 file_inode->fs_size = 0;
-                // ** To-do get new allocate space for write
+            // ** To-do get new allocate space for write
+            // 10 blocks as initial ? set them to
+            // file_inode->fs_blocks = 10
+            // file_inode->fs_addres = ? (new LBA)
                 result = 666;
                 file_inode->fs_address = result;
             }else{
