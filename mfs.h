@@ -61,10 +61,10 @@ typedef struct {
 	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
 	unsigned short d_reclen;    /* length of this record not used*/
 	unsigned short dirEntryPosition; /* not used*/
-	uint32_t	de_pos;	/* which directory entry position, like file pos */
+	uint32_t de_pos;	/* which directory entry position, like file pos */
 	uint32_t cur_pos; /* current pos (cursor) of the iterated children */
 	uint32_t num_children; /* total number of children of this dir */
-	fs_de **childrens; /* pointer to hold children */
+	struct fs_diriteminfo **children; /* pointer to hold children info */
 	}fdDir;
 
 /****************************************************

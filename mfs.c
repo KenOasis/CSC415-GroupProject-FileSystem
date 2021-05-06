@@ -261,14 +261,17 @@ fdDir * fs_opendir(const char *name){
         }
     }
     dirp->num_children = count_children;
-    dirp->childrens = (fs_de**)malloc(sizeof(fs_de*) * count_children);
+    dirp->children = malloc(sizeof(struct fs_diriteminfo*) * count_children);
 
     int pos = 0;
     for(int i = 1; i < directory->d_num_DEs; ++i){
         fs_de *current_dir_ent = (directory->d_dir_ents + i);
+        fs_inode *current_inode = (directory->d_inodes + i);
         current_parent_inode = current_dir_ent->de_dotdot_inode;
         if(current_parent_inode == parent_inode){
-            *(dirp->childrens + pos) = current_dir_ent;
+            (*(dirp->children + pos)) = malloc(sizeof(struct fs_diriteminfo)); 
+            (*(dirp->children + pos))-> file_type = current_inode->fs_entry_type;
+            strcpy((*(dirp->children + pos))-> d_name, current_dir_ent->de_name);
             pos++;
         }
         current_dir_ent = NULL;
@@ -293,26 +296,15 @@ fdDir * fs_opendir(const char *name){
 * This function is used to itreate the children of 
 *	the given struct(fdDir) for a direcotry
 ****************************************************/
+
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-    fs_directory* directory = malloc(MINBLOCKSIZE);
-    LBAread(directory, 1, fs_DIR.LBA_root_directory);
-    reload_directory(directory);
+    struct fs_diriteminfo *di = NULL;
     // Iterated the the children one by one, return NULL if finish
     if((dirp->cur_pos) < (dirp->num_children)){
-        struct fs_diriteminfo* dirinfo = malloc(sizeof(struct fs_diriteminfo));
-        uint32_t inode = (directory->d_dir_ents + dirp->cur_pos)->de_inode;
-        unsigned char file_type = (directory->d_inodes + inode)->fs_entry_type;
-        dirinfo->file_type = file_type;
-        strcpy(dirinfo->d_name, (*(dirp->childrens + dirp->cur_pos))->de_name);
+        di = (*(dirp->children + dirp->cur_pos));
         (dirp->cur_pos)++;
-        free_directory(directory);
-        directory = NULL;
-        return dirinfo;
-    }else{
-        free_directory(directory);
-        directory = NULL;
-        return NULL;
     }
+    return di;
 }
 
 /****************************************************
@@ -324,9 +316,13 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
 * object and do something to close the itreation
 ****************************************************/
 int fs_closedir(fdDir *dirp){
-    free(dirp->childrens);
+    for(int i = 0; i < dirp->num_children; ++i){
+        free(*(dirp->children + i));
+        (*(dirp->children + i));
+    }
+    free(dirp->children);
     free(dirp);
-    dirp->childrens = NULL;
+    dirp->children = NULL;
     dirp = NULL;
     return 0;
 }
@@ -358,7 +354,7 @@ char * fs_getcwd(char *buf, size_t size){
 * directory
 ****************************************************/
 int fs_setcwd(char *buf){
-    //To-do finshi relative path
+     //To-do finshi relative path
     int is_success = 1;
     char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
     splitDIR *spcwd = split_dir(cwd);
