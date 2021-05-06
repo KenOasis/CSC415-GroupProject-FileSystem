@@ -270,9 +270,8 @@ uint64_t LBAread (void * buffer, uint64_t lbaCount, uint64_t lbaPosition)
 	if ((lbaPosition + lbaCount) > partInfop->numberOfBlocks)
 		{
 		//The are trying to read too far
-		if (lbaPosition+1 >= partInfop->numberOfBlocks) {
+		if (lbaPosition+1 >= partInfop->numberOfBlocks)
 			return 0;	//no read because starting beyond volume
-		}
 		
 		lbaCount = 	partInfop->numberOfBlocks - lbaPosition;
 		fl.l_len = lbaCount * partInfop->blocksize;
@@ -286,6 +285,7 @@ uint64_t LBAread (void * buffer, uint64_t lbaCount, uint64_t lbaPosition)
 	fl.l_type = F_UNLCK;
 	fcntl(partInfop->fd, F_SETLKW, &fl);
 	
-	return lbaCount;
+	return 0;
 	}
+
 

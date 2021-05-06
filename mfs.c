@@ -139,6 +139,8 @@ int fs_mkdir(const char *pathname, mode_t mode){
             inode->fs_entry_type = DT_DIR;
             strcpy(de->de_name, new_dir_name);
             write_directory(directory);
+            updateModTime(parent_pos);
+            updateModTime(free_dir_ent);
             de = NULL;
             inode = NULL;
             success_status = 0;
@@ -200,10 +202,12 @@ int fs_rmdir(const char *pathname){
         }
         if(is_empty_dir){
             // de-connected it to the parent node (which is free from directory)
+            uint32_t parent_pos = de->de_dotdot_inode;
             de->de_dotdot_inode = UINT_MAX;
             success_rmdir = 1;
             //write back changed directory info to LBA
             write_directory(directory);
+            updateModTime(parent_pos);
         }else{
             printf("%s is not a empty directory\n", de->de_name);
         }
@@ -226,10 +230,10 @@ int fs_rmdir(const char *pathname){
 /****************************************************
 * @parameters 
 *   @type const char* : the dir (fullpath) need to be 
-*												opened and iterated.
+*		                opened and iterated.
 * @return
 *   @type fdDir* : a struct hold the current direcoty
-*									info to iterate the children
+*	info to iterate the children
 * This function opens a dir(fullpath) to iterate the
 *	children of them
 ****************************************************/
@@ -449,6 +453,7 @@ int fs_delete(char* filename){
         uint32_t de_pos = find_DE_pos(spdir);
         fs_de *de = (directory->d_dir_ents + de_pos);
         uint32_t inode_pos = de->de_inode;
+        uint32_t parent_pos = de->de_dotdot_inode;
         de->de_dotdot_inode = UINT_MAX;
         fs_inode *inode = (directory->d_inodes + inode_pos);
         /*to-do free space of the file (inode find address*/
@@ -460,6 +465,7 @@ int fs_delete(char* filename){
         inode->fs_accesstime = time(NULL);
         inode->fs_entry_type = DT_DIR;
         write_directory(directory);
+        updateModTime(parent_pos);
         success_delete = 0;
     }
     free_directory(directory);
@@ -546,6 +552,8 @@ int fs_move(const char *src, const char* dest){
             result = -3;
         }else{
             //de_pos is eqaul to inode_pos (value)
+            updateModTime(src_de_pos);
+            updateModTime(dest_de_pos);
             fs_de *src_de = directory->d_dir_ents + src_de_pos;
             src_de->de_dotdot_inode = dest_de_pos;
             write_directory(directory);

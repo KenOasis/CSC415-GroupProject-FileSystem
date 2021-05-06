@@ -341,7 +341,6 @@ uint64_t getFileLBA(const char *filename, int flags){
             fs_inode *file_inode = (directory->d_inodes + file_de_pos);
             strcpy(file_de->de_name, filename);
             if((flags & O_TRUNC) == O_TRUNC){
-                    printf("run trunc for %s\n", filename);
             // ** To-do free the old LBA space
                 file_inode->fs_blocks = 0;
                 file_inode->fs_size = 0;
@@ -349,18 +348,18 @@ uint64_t getFileLBA(const char *filename, int flags){
                 result = 666;
                 file_inode->fs_address = result;
             }else{
-                printf("run no trunc for %s\n", filename);
                 result = file_inode->fs_address;
                 // printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
                 // printf("address for %s is %lld\n", filename, result);
             }
             write_directory(directory);
+            updateModTime(file_de->de_dotdot_inode);
+            updateModTime(file_de->de_inode);
             file_de = NULL;
             file_inode = NULL;
         }
     }else if((flags & O_CREAT) == O_CREAT){
         // No same name dir or file exist
-        printf("run new at open for %s\n", filename);
         uint32_t new_de_pos = find_free_dir_ent(directory);
         fs_de *new_de = (directory->d_dir_ents + new_de_pos);
         new_de -> de_dotdot_inode = parent_pos;
@@ -376,6 +375,8 @@ uint64_t getFileLBA(const char *filename, int flags){
         //End of Test data
         result = new_inode->fs_address;
         write_directory(directory);
+        updateModTime(parent_pos);
+        updateModTime(new_de_pos);
         new_de = NULL;
         new_inode = NULL;
     }else{
@@ -458,6 +459,7 @@ int setFileSize(const char *filename, off_t filesize){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_size = filesize;
         write_directory(directory);
+        updateModTime(de_pos);
         result = 1;
     }else{
         printf("%s is not exist or not a File\n", filename);
@@ -487,6 +489,7 @@ int setFileBlocks(const char *filename, blkcnt_t count){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_blocks = count;
         write_directory(directory);
+        updateModTime(de_pos);
         result = 1;
     }else{
         printf("%s is not exist or not a File\n", filename);
@@ -517,6 +520,7 @@ int setFileLBA(const char *filename, uint64_t address){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_address = address;
         write_directory(directory);
+        updateModTime(de_pos);
         result = 1;
     }else{
         printf("%s is not exist or not a File\n", filename);
@@ -529,12 +533,15 @@ int setFileLBA(const char *filename, uint64_t address){
     fullpath = NULL;
     return result;
 }
-
+// Not used
 int updateAccessTime(uint32_t inode){
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
     (directory->d_inodes + inode)->fs_accesstime = time(NULL);
+    write_directory(directory);
+    free_directory(directory);
+    directory = NULL;
     return 1;
 }
 
@@ -542,7 +549,10 @@ int updateModTime(uint32_t inode){
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    (directory->d_inodes + inode)->fs_modtime= time(NULL);
+    (directory->d_inodes + inode)->fs_modtime = time(NULL);
+    write_directory(directory);
+    free_directory(directory);
+    directory = NULL;
     return 1;
 }
 
