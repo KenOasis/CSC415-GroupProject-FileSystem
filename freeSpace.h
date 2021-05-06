@@ -11,6 +11,7 @@ typedef struct  {
 	uint64_t LBABitVector; //LBA location of bit vector
 	int blocksNeeded;
 	int structSize;
+	int blockCount; //amount of blocks vector is accounting for
 } freeSpace;
 
 freeSpace* init_freeSpace(int totalBlocks, int bytesPerBlock); //initialize the free space if it doesn't exist

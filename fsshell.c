@@ -30,6 +30,8 @@
 #include "mfs.h"
 #include "dir.h"
 
+freeSpace* vector;
+
 /***************  START LINUX TESTING CODE FOR SHELL ***************/
 #define TEMP_LINUX 0  //MUST be ZERO for working with your file system
 #if (TEMP_LINUX == 1)
@@ -746,5 +748,9 @@ int main (int argc, char * argv[])
 		} // end while
 		free(v0);
 		v0 = NULL;
+		free(vector->bitVector);
+		vector->bitVector = NULL;
+		free(vector);
+		vector = NULL;
 		closePartitionSystem();
 	}

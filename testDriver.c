@@ -28,6 +28,8 @@
 #include "freeSpace.h"
 #include "vcb.h"
 #include "dir.h"
+
+extern freeSpace* vector;
 int main (int argc, char *argv[])
 	{	
 	char * filename = "VolumeTest";
@@ -66,6 +68,8 @@ int main (int argc, char *argv[])
 		fs_closedir(fdir);
 	}
 	free_directory(directory);
+	free(vector->bitVector);
+	free(vector);
 	closePartitionSystem();
 	return 0;	
 	}
