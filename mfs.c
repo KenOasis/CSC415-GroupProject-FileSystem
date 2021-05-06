@@ -11,7 +11,6 @@
 * @return
 *   @type uint64_int: LBA address of directory
 * This function return the position of the next free
-* directory entry.
 * it has a initial direcoty as:
 *                    root
 *                      |
@@ -27,9 +26,10 @@ uint64_t fs_init(/*freeSpace * vector*/){
     int blockCountDE = (actualNumInode * sizeof(fs_de) + MINBLOCKSIZE - 1) / MINBLOCKSIZE;
     /* the size of the inode is bigger than the size of DE, so we use the actual number of inodes to
     allocated the memory */
-    fs_inode *inodes = malloc(blockCountInode * actualNumInode);
+    fs_inode *inodes = malloc(blockCountInode * MINBLOCKSIZE);
 
-    fs_de *dir_ents = malloc(blockCountDE * actualNumInode);
+    fs_de *dir_ents = malloc(blockCountDE * MINBLOCKSIZE);
+
     // uint64_t LBA_inodes = findMultipleBlocks(blockCountInode,vector);
     uint64_t LBA_inodes = 128; // temperary for test
     //Initialize inodes
@@ -76,8 +76,9 @@ uint64_t fs_init(/*freeSpace * vector*/){
     uint64_t LBA_dir_ents = 512; // for test only
 
     LBAwrite(dir_ents, blockCountDE, LBA_dir_ents);
-
+ 
     fs_directory *directory = (fs_directory*)malloc(sizeof(fs_directory));
+
     directory->d_de_start_location = LBA_dir_ents;
     directory->d_de_blocks = blockCountDE;
     directory->d_inode_start_location = LBA_inodes;

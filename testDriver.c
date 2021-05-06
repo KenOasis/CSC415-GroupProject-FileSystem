@@ -34,13 +34,13 @@ int main (int argc, char *argv[])
 	uint64_t volumeSize = 10000000;
 	uint64_t blockSize = BLOCKSIZE;
   int retVal;
-		
 	retVal = startPartitionSystem (filename, &volumeSize, &blockSize);	
 	printf("Opened %s, Volume Size: %llu;  BlockSize: %llu; Return %d\n", filename, (ull_t)volumeSize, (ull_t)blockSize, retVal);
 
 	vcb *v0 = bootVCB(blockSize*10240, blockSize);
 	printf("magic number is:%x\n", v0->magic_number);
 	fs_directory* directory = malloc(blockSize);
+	// printf("hresasd\n");
 	LBAread(directory, 1, v0->LBA_root_directory);
 	reload_directory(directory);
 	char *name = "root/Users/";

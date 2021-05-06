@@ -177,7 +177,7 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 			if (fllong)
 				{
 				fs_stat (di->d_name, &statbuf);
-				printf ("%s    %9lld   %s\n", fs_isDir(di->d_name)?"D":"-", statbuf.st_size, di->d_name);
+				printf ("%s    %9ld   %s\n", fs_isDir(di->d_name)?"D":"-", statbuf.st_size, di->d_name);
 				}
 			else
 				{

@@ -146,7 +146,7 @@ int b_open (char * filename, int flags)
 		fcbArray[returnFd].readWriteFlags = -1;	// -1 means not initialized
 	}
 
-	printf("size: %lld\n", fcbArray[returnFd].fileSize);
+	printf("size: %ld\n", fcbArray[returnFd].fileSize);
 	printf("read write flag: %d\n", fcbArray[returnFd].readWriteFlags);
 	return (returnFd);
 }

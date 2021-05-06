@@ -322,8 +322,8 @@ uint64_t getFileLBA(const char *filename, int flags){
             }else{
                 printf("run no trunc for %s\n", filename);
                 result = file_inode->fs_address;
-                printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
-                printf("address for %s is %lld\n", filename, result);
+                // printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
+                // printf("address for %s is %lld\n", filename, result);
             }
             write_directory(directory);
             file_de = NULL;
