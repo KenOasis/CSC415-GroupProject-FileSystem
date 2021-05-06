@@ -46,7 +46,6 @@ u_int64_t findMultipleBlocks(int blockCount) {
 				freeIndex = 0;
 			}
 			if (consecutiveFree >= blockCount) {	//found the necessary chunk, sets all used bits to 1 and return the index of first free bit
-				//printf("FREE BLOCKS werE FOUND\n");
 				int count = consecutiveFree;
 				int position = freeIndex;
 				int freePos = position / 32;
@@ -60,13 +59,11 @@ u_int64_t findMultipleBlocks(int blockCount) {
 						freeBit = 0;
 					}
 				}
-				LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector);
-				//printf("free block found: %d\n", freeIndex);
+				LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector); //write the updates to bit vector to LBA
 				return freeIndex;
 			}
 		}
 	}
-	//printf("free block NOT found: %d\n", freeIndex);
 	freeIndex = 0;
 	return freeIndex; 								//bits were not found, return 0 to indicate error
 }
@@ -74,7 +71,7 @@ u_int64_t findMultipleBlocks(int blockCount) {
 void freeSomeBits(int startIndex, int count) {
 	int index = startIndex / 32;
 	int position = startIndex % 32;
-	for (int n = 0; n < count; n++) {
+	for (int n = 0; n < count; n++) { //iterates through bits to be freed
 		int value = 1 << position;
 		value = ~value;
 		vector->bitVector[index] &= value;
@@ -84,13 +81,13 @@ void freeSomeBits(int startIndex, int count) {
 			position = 0;
 		}
 	}
-	LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector);
+	LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector); //write the updates to bit vector to LBA
 }
 
 u_int64_t expandFreeSection(int fileLocation, int fileBlockSize, int newBlockSize) {
-	freeSomeBits(fileLocation, fileBlockSize);
-	u_int64_t newLBA = findMultipleBlocks(newBlockSize);
-	if (newLBA > 0) {
+	freeSomeBits(fileLocation, fileBlockSize); //frees the original bits
+	u_int64_t newLBA = findMultipleBlocks(newBlockSize); //looks for the new size; if new size won't fit, it will find the proper block, otherwise it'll just find the same
+	if (newLBA > 0) { //moves the data in the old location into the new LBA
 		char * buf = malloc(4096 * fileBlockSize);
 		LBAread(buf, fileBlockSize, fileLocation);
 		LBAwrite(buf, fileBlockSize, newLBA);
@@ -98,51 +95,3 @@ u_int64_t expandFreeSection(int fileLocation, int fileBlockSize, int newBlockSiz
 	}
 	return newLBA;
 }
-
-/*int main() {
-	freeSpace* space = init_freeSpace(500, 512);
-	u_int64_t blockLocation = findMultipleBlocks(5, space);
-	u_int64_t blockLocationTwo = findMultipleBlocks(2, space);
-	freeSomeBits(4, 5, space);
-	blockLocation = findMultipleBlocks(5, space);
-	freeSomeBits(30, 2, space);
-	for (int n = 0; n < space->size; n++) {
-		printf("Integer %d: %d\n", n, space->bitVector[n]);
-	}
-	printf("Free block location: %lu, Second: %lu\n", blockLocation, blockLocationTwo);
-	//printf("SIZE WITHOUT VECTOR: %lu\n", space->LBABitVector);
-	return 0;
-}*/
-
-
-/*u_int64_t findFreeBlock(freeSpace* vector) {
-	int freeIndex = vector->nextFreeIndex + vector->nextFreePosition * 32; //the bit number that is free, aka the next free block
-	vector->bitVector[vector->nextFreePosition] |= 1 << vector->nextFreeIndex; //sets bit to 1 for future reference
-	vector->nextFreeIndex += 1;
-	if (vector->nextFreeIndex >= 32) { //if nextFreeIndex >= 32, then move to next int in the bit vector
-		vector->nextFreePosition += 1;
-		vector->nextFreeIndex = 0;
-	}
-	if (vector->nextFreePosition == vector->size) { //freeSpace is full
-		return -1;
-	}
-	return freeIndex;
-}
-
-u_int64_t findMultipleBlocks(int blockCount, freeSpace* vector) {
-	int count = blockCount; //tracks how many remaining blocks to reserve/handle
-	int freeIndex = vector->nextFreeIndex + vector->nextFreePosition * 32; //the bit index that is free, followed by more free space
-	while (count > 0) { //counts down and manipulates the bits that are free that will be used, returns -1 if not enough bits/blocks left
-		vector->bitVector[vector->nextFreePosition] |= 1 << vector->nextFreeIndex; //set bit to 1 for future reference
-		vector->nextFreeIndex += 1;
-		if (vector->nextFreeIndex >= 32) { //if nextFreeIndex >= 32, then move to next int in the bit vector
-                	vector->nextFreePosition += 1;
-                	vector->nextFreeIndex = 0;
-        	}
-		if (vector->nextFreePosition == vector->size) { //free space is full
-			return -1;
-		}
-		count--;
-	}
-	return freeIndex;
-}*/
