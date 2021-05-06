@@ -354,73 +354,26 @@ char * fs_getcwd(char *buf, size_t size){
 * directory
 ****************************************************/
 int fs_setcwd(char *buf){
-     //To-do finshi relative path
     int is_success = 1;
     char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-    splitDIR *spcwd = split_dir(cwd);
-    splitDIR *spbuf = split_dir(buf);
-    splitDIR *spdir = NULL;
-    char *new_path = NULL;
-    char *temp_cwd = NULL;
-    char *new_parent_dir = NULL;
-    char *new_dir_path = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    //analysis the path info of cd command 
-    if(strcmp(buf, ".") == 0){
-        strcpy(new_dir_path, cwd);
-    }else if(strcmp(buf, "..") == 0){
-        if((spcwd->length) <= 2){
-            strcpy(new_dir_path, "root/");
-        }else{
-            new_path = assemble_path(cwd, 0, -1);
-            strcpy(new_dir_path, new_path);
-        }
-    }else if((strlen(buf) > 1) && (buf[0] == '.')){
-        new_path = assemble_path(buf + 1, 0, 0);
-        strcpy(new_dir_path, cwd);
-        if(spcwd->length > 1)
-            new_dir_path = strcat(new_dir_path, "/");
-        new_dir_path = strcat(new_dir_path, new_path);
-    }else if(strcmp(buf, "/") == 0){
-        strcpy(new_dir_path, "root/");
-    }else if((strlen(buf) > 1) && (buf[0] == '/')){
-        new_path = assemble_path(buf + 1, 0, 0);
-        strcpy(new_dir_path, "root/");
-        new_dir_path = strcat(new_dir_path, new_path);
-    }else{
-        new_path = assemble_path(buf, 0, 0);
-        strcpy(new_dir_path, cwd);
-        if(spcwd->length > 1)
-            new_dir_path = strcat(new_dir_path, "/");
-        new_dir_path = strcat(new_dir_path, new_path);
-    }
-    /*check the url is exist as dir*/
-    temp_cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-    new_parent_dir = assemble_path(new_dir_path, 0, -1);
-    spdir = split_dir(new_dir_path);
-    strcpy(fs_DIR.cwd, new_parent_dir);
-    if(fs_isDir(*(spdir->dir_names + spdir->length - 1))){
-        strcpy(fs_DIR.cwd, new_dir_path);
+    char *cwd_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    char *abslpath = NULL;
+    strcpy(cwd_buf, cwd);
+    abslpath = get_absolute_path(cwd_buf, buf);
+    // printf("absolute path is %s\n", abslpath);
+    if((abslpath != NULL) && is_Dir(abslpath)){
         is_success = 0;
-    }else{
-        strcpy(fs_DIR.cwd, temp_cwd);
+        strcpy(fs_DIR.cwd, abslpath);
+        // printf("Change cwd to %s\n", fs_DIR.cwd);
     }
-    free_split_dir(spcwd);
-    free_split_dir(spbuf);
-    free_split_dir(spdir);
-    free(new_path);
-    free(temp_cwd);
-    free(new_parent_dir);
-    free(new_dir_path);
-    free(cwd); 
+    free(cwd);
+    free(cwd_buf);
+    free(abslpath);
     cwd = NULL;
-    spcwd = NULL;
-    spbuf = NULL;
-    spdir = NULL;
-    new_path = NULL;
-    temp_cwd = NULL;
-    new_parent_dir = NULL;
-    new_dir_path = NULL;
+    cwd_buf = NULL;
+    abslpath = NULL;
     return is_success;
+    
 }
 
 /****************************************************
@@ -444,7 +397,7 @@ int fs_isFile(char * path){
     cwd = NULL;
     fullpath = NULL;
     return is_file;
-    }//return 1 if file, 0 otherwise
+ }//return 1 if file, 0 otherwise
 
 /****************************************************
 * @parameters 

@@ -159,7 +159,7 @@ int is_duplicated_dir(uint32_t parent_de_pos, const char* name){// if return val
 splitDIR* split_dir(const char *name){
     // restart here! add . and .. into childrens
     const char delimiter[2] = "/";
-    char *pathname = malloc(sizeof(char)*256);
+    char *pathname = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
     char *token;
     int length = 0;
     strcpy(pathname, name);
@@ -206,42 +206,71 @@ void free_split_dir(splitDIR *spdir){
 
 /****************************************************
 * @parameters 
-*   @type char*: the buf hold the path to assembly
-    @type int*: the offset from the head of path
-		@type int*: the offset from the tail of path
+*   @type char*: the buf hold the cwd part of path
+*   @type char*: the buf hold the argv part of path
+*                which is relative path
 * @return
 *   @type char*: the path of assembly result
-* This function is to assembly path as fs_setcwd needed
-* example:
-*			intput:
-			buf: /this/is/a/path/of/test
-			head_offset: -1
-			tail_offset: -1
-			output:
-		  /is/a/path/of
-			it cut the 1st level from the head : /this
-			, and the 1st level from the tail: /of  
+* This function is to tranform the relative path based
+* on the given cwd to the absoluted path from the root
 ****************************************************/
-char *assemble_path(char *buf, int head_offset, int tail_offset){
-    char *temp = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    char *new_cwd = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    strcpy(temp, buf);
-    splitDIR *temp_spbuf = split_dir(temp);
-    for(int i = head_offset; i < (temp_spbuf->length + tail_offset); ++i){
-        if(i < (temp_spbuf->length - 1 + tail_offset)){
-            strcpy(temp, *(temp_spbuf->dir_names + i));
-            temp = strcat(temp,"/");
-        }else{
-            strcpy(temp,(*(temp_spbuf->dir_names + i)));
-        }
-            new_cwd = strcat(new_cwd, temp);
-            strcpy(temp, "");
+
+char *get_absolute_path(char* cwd, char* argv){
+    char* absolute_path = NULL;
+    splitDIR *cwd_spdir = NULL;
+    splitDIR *argv_spdir = split_dir(argv);
+    if(argv[0] == '/'){
+        // if the argv start with "/" then the cwd part
+        // change to the root directory
+        cwd_spdir = split_dir("root/");
+    }else{
+        cwd_spdir= split_dir(cwd);
     }
-    free(temp);
-    temp = NULL;
-    free_split_dir(temp_spbuf);
-    temp_spbuf = NULL;
-    return new_cwd;
+    
+    int stack_capacity = cwd_spdir->length + argv_spdir->length + 1;
+    stringStack *stack = initStack(stack_capacity);
+    char *temp = NULL;
+    for(int i = 0; i < cwd_spdir->length; ++i){
+        temp = (*(cwd_spdir->dir_names + i));
+        pushIntoStack(stack, temp);
+    }
+    
+    for(int i = 0; i < argv_spdir->length; ++i){
+        temp = (*(argv_spdir->dir_names + i));
+        if(strcmp(temp, ".") == 0){
+            continue;
+        }else if(strcmp(temp, "..") == 0){
+            temp = popFromStack(stack);
+            if(strcmp(temp, "root") == 0){
+                pushIntoStack(stack, temp);
+            }
+        }else{
+            pushIntoStack(stack, temp);
+        }
+    }
+    if((stack->top != 0)){
+        absolute_path = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+        for(int i = 0; i < stack->top; ++i){
+            temp = (*(stack->strings + i));
+            if(i == 0){
+                strcpy(absolute_path, temp);
+            }else{
+                absolute_path = strcat(absolute_path, temp);
+            }
+            absolute_path = strcat(absolute_path, "/");
+        }
+        if(strcmp(absolute_path, "root/") != 0){
+            //remove the "/" if not the root dir
+            absolute_path[strlen(absolute_path) - 1] = 0;
+        }
+    }
+    free_split_dir(cwd_spdir);
+    free_split_dir(argv_spdir);
+    free_stack(stack);
+    cwd_spdir = NULL;
+    argv_spdir = NULL;
+    stack = NULL;
+    return absolute_path;
 }
 
 int is_File(char *fullpath){
@@ -517,6 +546,44 @@ int updateModTime(uint32_t inode){
     return 1;
 }
 
+stringStack* initStack(int capacity){
+    stringStack *stack = malloc(sizeof(stringStack));
+    stack->capacity = capacity;
+    stack->top = 0;
+    stack->strings = malloc(sizeof(char*) * capacity);
+    for(int i = 0; i < capacity; ++i){
+        *(stack->strings + i) = malloc(sizeof(char) * 256);
+    }
+    return stack;
+}
+
+int pushIntoStack(stringStack* stack, char* string){
+    int result = 1;
+    if((stack->top) < (stack->capacity)){
+        strcpy(*(stack->strings + stack->top),  string);
+        (stack->top)++;
+        result = 0;
+    }
+    return result;
+}
+
+char* popFromStack(stringStack* stack){
+    char *result = NULL;
+    if(stack->top > 0){
+        result = malloc(sizeof(char) * 256);
+        strcpy(result, *(stack->strings + stack->top - 1));
+        (stack->top)--;
+    }
+    return result;
+}
+
+int free_stack(stringStack *stack){
+    for(int i = 0; i < stack->top; ++i){
+        free(*(stack->strings + i));
+    }
+    free(stack->strings);
+    return 0;
+}
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/

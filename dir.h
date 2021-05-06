@@ -79,6 +79,11 @@ typedef struct{
 	char **dir_names;
 }splitDIR;
 
+typedef struct{
+	int capacity;
+	int top; // point to the postion after the top
+	char **strings;
+}stringStack;
 
 
 /****************************************************
@@ -185,6 +190,8 @@ void free_split_dir(splitDIR *spdir);
 ****************************************************/
 char *assemble_path(char *buf, int head_offset, int tail_offset);
 
+char *get_absolute_path(char* cwd, char* argv);
+
 int is_File(char *fullpath);
 int is_Dir(char *fullpath);
 uint64_t getFileLBA(const char *filename, int flags);
@@ -199,9 +206,17 @@ int setFileBlocks(const char *filename, blkcnt_t count);
 
 int setFileLBA(const char *filename, uint64_t Address);
 
+stringStack* initStack(int capacity);
+
+int pushIntoStack(stringStack* stack, char* string);
+
+char* popFromStack(stringStack* stack);
+
+int free_stack(stringStack* stack);
 int updateAccessTime(uint32_t inode);
 
 int updateModTime(uint32_t inode);
+
 /****************************************************
 *  helper function to format time output, test only
 ****************************************************/
