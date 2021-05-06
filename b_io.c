@@ -25,6 +25,7 @@
 #include "fsLow.h"  		// import MINBLOCKSIZE 512
 #include "mfs.h"
 #include <math.h>			// for ceil()
+#include <stdlib.h>
 
 #define MAXFCBS 20
 #define BUFSIZE 512
@@ -41,6 +42,7 @@ typedef struct b_fcb
 	int buflen;		//holds how many valid bytes are in the buffer
 	bool writeBufferNonEmpty;	// track if we need to flush write buffer
 	int cursorInDisk;	// the cursor that tracks which block we are on disk
+	int bytesRead;	// the cursor that tracks # bytes read (in case it's reaching EOF)
 	off_t fileSize;	// the current size of the file
 	blkcnt_t fileBlocksAllocated;	// total number of the blocks that the file allocated
 	} b_fcb;
@@ -105,6 +107,7 @@ int b_open (char * filename, int flags)
 	fcbArray[returnFd].index = 0;			// have not read anything yet
 	fcbArray[returnFd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
 	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
+	fcbArray[returnFd].bytesRead = 0;
 	
 	// // O_CREAT
 	// if (flags & O_CREAT) {
@@ -146,8 +149,8 @@ int b_open (char * filename, int flags)
 		fcbArray[returnFd].readWriteFlags = -1;	// -1 means not initialized
 	}
 
-	printf("size: %ld\n", fcbArray[returnFd].fileSize);
-	printf("read write flag: %d\n", fcbArray[returnFd].readWriteFlags);
+	// printf("b_open size: %ld\n", fcbArray[returnFd].fileSize);
+	// printf("read write flag: %d\n", fcbArray[returnFd].readWriteFlags);
 	return (returnFd);
 }
 
@@ -186,6 +189,7 @@ int b_write (int fd, char * buffer, int count)
 	// Convert fileSize to how many blocks the file is taking (this is not the total blocks allocated)
 	fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
 
+	// printf("b_write count: %d\n", count);
 	// Writing to the file from caller's buffer until reaching the end
 	while (count > 0) {
 		// number of bytes needed to fill the buffer
@@ -270,8 +274,9 @@ int b_read (int fd, char * buffer, int count)
 	int bytesReturned;			// what we will return
 	int part1, part2, part3;	// holds the three potential copy lengths
 	int numberOfBlocksToCopy;	// holds the number of whole blocks that are needed
-	int remainingBytesInMyBuffer;	// holds how many bytes are left in my buffer						
-	
+	int remainingBytesInMyBuffer;	// holds how many bytes are left in my buffer	
+	int remainingBytesToRead;	// = file size - bytesRead
+
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check if fd is valid
@@ -290,6 +295,16 @@ int b_read (int fd, char * buffer, int count)
 		printf("ERROR: No access to read.\n");
 		return -1;
 	}
+
+	// To handle EOF - reset count as the remaining bytes
+	remainingBytesToRead = fcbArray[fd].fileSize - fcbArray[fd].bytesRead;
+	if (count > remainingBytesToRead) {
+		count = remainingBytesToRead;
+	}
+
+	// printf("b_read fcbArray[fd].startingLBA: %ld\n", fcbArray[fd].startingLBA);
+	// printf("b_read fcbArray[fd].fileBlocksAllocated: %ld\n", fcbArray[fd].fileBlocksAllocated);
+	// printf("b_read fcbArray[fd].fileSize : %ld\n", fcbArray[fd].fileSize);
 	
 	// number of bytes available to copy from buffer
 	remainingBytesInMyBuffer = fcbArray[fd].buflen - fcbArray[fd].index;	
@@ -319,25 +334,34 @@ int b_read (int fd, char * buffer, int count)
 		// Part 3 at this point must be less than the block size
 		part3 = part3 - part2; // This would be equivalent to part3 % BUFSIZE		
 		}
-				
+
 	if (part1 > 0)	// memcpy part 1
 		{
+		// printf("\npart1: %d\n", part1);
 		memcpy (buffer, fcbArray[fd].buf + fcbArray[fd].index, part1);
 		fcbArray[fd].index = fcbArray[fd].index + part1;
 		}
 		
 	if (part2 > 0) 	//blocks to copy direct to callers buffer
 		{
-		bytesRead = LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		// printf("\npart2: %d\n", part2);
+		bytesRead = MINBLOCKSIZE * LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		// printf("bytesRead: %d\n", bytesRead);
 		part2 = bytesRead;  //might be less if we hit the end of the file
-		fcbArray[fd].cursorInDisk += numberOfBlocksToCopy; //
+		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
+		fcbArray[fd].cursorInDisk += numberOfBlocksToCopy; 
+		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
 		}
 		
 	if (part3 > 0)	//We need to refill our buffer to copy more bytes to user
-		{		
-		//Read BUFSIZE bytes into our buffer
-		bytesRead = LBAread (fcbArray[fd].buf, BUFSIZE, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		{
+		// printf("\npart3: %d\n", part3);		
+		//Read 1 block into our buffer
+		bytesRead = MINBLOCKSIZE * LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fcbArray[fd].cursorInDisk);
+		// printf("bytesRead: %d\n", bytesRead);
+		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
 		fcbArray[fd].cursorInDisk += 1;	//Move to the next block
+		// printf("fcbArray[fd].cursorInDisk: %d\n", fcbArray[fd].cursorInDisk);
 		
 		// we just did a read into our buffer - reset the offset and buffer length.
 		fcbArray[fd].index = 0;
@@ -353,6 +377,7 @@ int b_read (int fd, char * buffer, int count)
 			}	
 		}
 	bytesReturned = part1 + part2 + part3;
+	fcbArray[fd].bytesRead += bytesReturned;
 	return (bytesReturned);	
 	}
 
@@ -389,6 +414,7 @@ void b_close (int fd)
 	// Add the end of the file remained in the write buffer
 	// When the indicator is true, we know that there are some remaining to write
 	if (fcbArray[fd].writeBufferNonEmpty) {
+		// printf("clsoe: buffer non empty\n");
 		// Convert fileSize to how many blocks the file is taking
 		int fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
 		// check if all allocated blocks have been used
@@ -405,7 +431,9 @@ void b_close (int fd)
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
 
 		// update
+		// printf("filesize:%ld\n", fcbArray[fd].fileSize);
 		fcbArray[fd].fileSize += fcbArray[fd].buflen;
+		// printf("filesize:%ld\n", fcbArray[fd].fileSize);
 		fcbArray[fd].writeBufferNonEmpty = false;
 	}
 	// update a few meta info about the file to directory
@@ -419,8 +447,8 @@ void b_close (int fd)
 	fcbArray[fd].cursorInDisk = -1;
 	fcbArray[fd].fileBlocksAllocated = 0;
 	fcbArray[fd].fileSize = 0;
+	fcbArray[fd].bytesRead = 0;
 
-	// close (fcbArray[fd].fcbStatus);		// close the linux file handle
 	free (fcbArray[fd].buf);			// free the associated buffer
 	fcbArray[fd].buf = NULL;			// Safety First
 	fcbArray[fd].fcbStatus = -1;			// return this FCB to list of available FCB's 
