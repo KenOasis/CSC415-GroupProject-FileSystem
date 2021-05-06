@@ -23,8 +23,8 @@ freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
 		flag = flag << n;
 		vector->bitVector[0] |= flag;
 	}
-	//vector->nextFreePosition = 0;
-	//vector->nextFreeIndex = blocksNeeded; //next free block is right after free space bit vector
+	LBAwrite(vector, 1, 2);
+	LBAwrite(vector->bitVector, vector->blocksNeeded, vector->LBABitVector);
 	return vector;
 }
 
@@ -59,7 +59,7 @@ u_int64_t findMultipleBlocks(int blockCount) {
 						freeBit = 0;
 					}
 				}
-				LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector); //write the updates to bit vector to LBA
+				LBAwrite(vector->bitVector, vector->blocksNeeded, vector->LBABitVector); //write the updates to bit vector to LBA
 				return freeIndex;
 			}
 		}
@@ -81,7 +81,7 @@ void freeSomeBits(int startIndex, int count) {
 			position = 0;
 		}
 	}
-	LBAwrite(vector->bitVector, (vector->size + 127) / 128, vector->LBABitVector); //write the updates to bit vector to LBA
+	LBAwrite(vector->bitVector, vector->blocksNeeded, vector->LBABitVector); //write the updates to bit vector to LBA
 }
 
 u_int64_t expandFreeSection(int fileLocation, int fileBlockSize, int newBlockSize) {
