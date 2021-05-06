@@ -337,6 +337,7 @@ int cmd_cp (int argcnt, char *argvec[])
 	do 
 		{
 		readcnt = b_read (testfs_src_fd, buf, BUFFERLEN);
+		printf("shell: readcnt %d\n", readcnt);
 		b_write (testfs_dest_fd, buf, readcnt);
 		} while (readcnt == BUFFERLEN);
 	b_close (testfs_src_fd);
@@ -438,7 +439,7 @@ int cmd_cp2l (int argcnt, char *argvec[])
 	
 	
 	testfs_fd = b_open (src, O_RDONLY);
-	linux_fd = open (dest, O_WRONLY | O_CREAT | O_TRUNC);
+	linux_fd = open (dest, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	do 
 		{
 		readcnt = b_read (testfs_fd, buf, BUFFERLEN);
