@@ -30,6 +30,7 @@
 #include "mfs.h"
 #include "dir.h"
 
+freeSpace* vector;
 /***************  START LINUX TESTING CODE FOR SHELL ***************/
 #define TEMP_LINUX 0  //MUST be ZERO for working with your file system
 #if (TEMP_LINUX == 1)
