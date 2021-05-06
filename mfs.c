@@ -30,7 +30,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
 
     fs_de *dir_ents = malloc(blockCountDE * MINBLOCKSIZE);
 
-    // uint64_t LBA_inodes = findMultipleBlocks(blockCountInode,vector);
+    // uint64_t LBA_inodes = findMultipleBlocks(blockCountInode);
     uint64_t LBA_inodes = 128; // temperary for test
     //Initialize inodes
     for(int i = 0; i < actualNumInode; ++i){
@@ -72,7 +72,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
         }
         (dir_ents + i)->de_inode = i;
     }
-    // uint64_t LBA_DEs = findMultipleBlocks(blockCountDE, vector);
+    // uint64_t LBA_DEs = findMultipleBlocks(blockCountDE);
     uint64_t LBA_dir_ents = 512; // for test only
 
     LBAwrite(dir_ents, blockCountDE, LBA_dir_ents);
@@ -456,6 +456,7 @@ int fs_delete(char* filename){
         uint32_t parent_pos = de->de_dotdot_inode;
         de->de_dotdot_inode = UINT_MAX;
         fs_inode *inode = (directory->d_inodes + inode_pos);
+        // free  inode->fs_address (this is the LBA to free)
         /*to-do free space of the file (inode find address*/
         inode->fs_size = sizeof(fs_de);
         inode->fs_blksize = 0;

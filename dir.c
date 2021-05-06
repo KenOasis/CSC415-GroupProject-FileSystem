@@ -402,7 +402,7 @@ blkcnt_t getBlocks(const char *filename){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         result = (directory->d_inodes + inode_num)->fs_blocks;
     }else{
-        printf("%s is not exist or not a File\n", filename);
+        // printf("%s is not exist or not a File\n", filename);
         result = ULLONG_MAX;
     }
     free_directory(directory);
@@ -430,7 +430,7 @@ off_t getFileSize(const char *filename){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         result = (directory->d_inodes + inode_num)->fs_size;
     }else{
-        printf("%s is not exist or not a File\n", filename);
+        // printf("%s is not exist or not a File\n", filename);
         result = ULLONG_MAX;
     }
     free_directory(directory);
@@ -462,7 +462,7 @@ int setFileSize(const char *filename, off_t filesize){
         updateModTime(de_pos);
         result = 1;
     }else{
-        printf("%s is not exist or not a File\n", filename);
+        // printf("%s is not exist or not a File\n", filename);
     }
     free_directory(directory);
     free_split_dir(spdir);
@@ -492,7 +492,7 @@ int setFileBlocks(const char *filename, blkcnt_t count){
         updateModTime(de_pos);
         result = 1;
     }else{
-        printf("%s is not exist or not a File\n", filename);
+        // printf("%s is not exist or not a File\n", filename);
     }
     free_directory(directory);
     free_split_dir(spdir);
@@ -523,7 +523,7 @@ int setFileLBA(const char *filename, uint64_t address){
         updateModTime(de_pos);
         result = 1;
     }else{
-        printf("%s is not exist or not a File\n", filename);
+        // printf("%s is not exist or not a File\n", filename);
     }
     free_directory(directory);
     free_split_dir(spdir);
