@@ -27,8 +27,8 @@ uint32_t find_free_dir_ent(fs_directory* directory){
         uint32_t old_num_inodes = directory->d_num_inodes;
         uint32_t old_num_DEs = directory->d_num_DEs;
 
-        //uint64_t new_de_start_location = expandFreeSection();
-        //uint64_t new_inode_start_location =  expandFreeSection();
+        uint64_t new_de_start_location = expandFreeSection(directory->d_de_start_location, directory->d_de_blocks, old_de_blocks * 2);
+        uint64_t new_inode_start_location =  expandFreeSection(directory->d_inode_start_location, directory->d_inode_blocks, old_inode_blocks * 2);
 
         directory->d_de_start_location = new_de_start_location;
         directory->d_inode_start_location = new_inode_start_location;
