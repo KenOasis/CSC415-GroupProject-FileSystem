@@ -109,8 +109,14 @@ int b_open (char * filename, int flags)
 	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
 	fcbArray[returnFd].bytesRead = 0;
 
-	// Get the starting LBA, blocks allocated, file size of the file by passing filename, O_CREAT/O_TRUNC flag to directory fucntion.
-	fcbArray[returnFd].startingLBA = getFileLBA(filename, flags); // If the file existing, return the starting LBA of the existing file. If not, it will create a file and retur its starting LBA.
+	// Get file meta data from directory
+	int res = getFileLBA(filename, flags);
+	// Error check
+	if (res == UINT_MAX) {
+		printf("ERROR: Failed to open.\n");
+		return -1;
+	}
+	fcbArray[returnFd].startingLBA = res; 
 	fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);
 	fcbArray[returnFd].fileSize = getFileSize(filename);
 
