@@ -14,7 +14,7 @@
 *              b_read: read bytes from a file to caller's buffer
 *			   b_write: write bytes from caller's buffer to a file
 *			   b_seek: look for a certain position from where to write or read
-*			   b_close: close the file
+*			   b_close: close the file and reset fcb
 *
 *****************************************************************************************/
 
