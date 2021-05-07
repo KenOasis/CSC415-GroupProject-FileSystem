@@ -5,22 +5,17 @@
 #include "mfs.h"
 #include "vcb.h"
 /****************************************************
-* @parameters 
-*   @type uint_32: a number represent the position
-*                  of the directory entry
-* @return
-*   @type uint64_int: LBA address of directory
-* This function return the position of the next free
-* it has a initial direcoty as:
+* 
 *                    root
 *                      |
 *                    Users
 *                      |
-*            Admin   Guest  Jimmy
+*            Admin   Guest  Group
 *
-*   the init cwd is root/Users
+*   Initial the directory which has basic structure
+* Note that root directory cannoed be changed
 ****************************************************/
-uint64_t fs_init(/*freeSpace * vector*/){
+uint64_t fs_init(){
     int blockCountInode = (MIN_DE_NUM * sizeof(fs_inode) + MINBLOCKSIZE - 1) / MINBLOCKSIZE;
     int actualNumInode = (blockCountInode * MINBLOCKSIZE) / sizeof(fs_inode);
     int blockCountDE = (actualNumInode * sizeof(fs_de) + MINBLOCKSIZE - 1) / MINBLOCKSIZE;
@@ -30,7 +25,6 @@ uint64_t fs_init(/*freeSpace * vector*/){
 
     fs_de *dir_ents = malloc(blockCountDE * MINBLOCKSIZE);
     uint64_t LBA_inodes = findMultipleBlocks(blockCountInode);
-    //uint64_t LBA_inodes = 128; // temperary for test
     //Initialize inodes
     for(int i = 0; i < actualNumInode; ++i){
         if(i < 5){
@@ -48,7 +42,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
         (inodes + i)->fs_accessmode = 0777;
     }
     LBAwrite(inodes,blockCountInode,LBA_inodes);
-    //Initialize DEs
+    //Initialize directory entries(DE)
     for(int i = 0; i < actualNumInode; ++i){
         if( i == 0){
             strcpy((dir_ents + i)->de_name, "root");
@@ -63,7 +57,7 @@ uint64_t fs_init(/*freeSpace * vector*/){
             strcpy((dir_ents + i)->de_name, "Guest");
             (dir_ents + i)->de_dotdot_inode = 1;
         }else if(i == 4){
-            strcpy((dir_ents + i)->de_name, "Jimmy");
+            strcpy((dir_ents + i)->de_name, "Group");
             (dir_ents + i)->de_dotdot_inode = 1;
         }else{
             strcpy((dir_ents + i)->de_name, "uninitialized");
@@ -72,12 +66,12 @@ uint64_t fs_init(/*freeSpace * vector*/){
         (dir_ents + i)->de_inode = i;
     }
     uint64_t LBA_dir_ents = findMultipleBlocks(blockCountDE);
-    //uint64_t LBA_dir_ents = 512; // for test only
 
     LBAwrite(dir_ents, blockCountDE, LBA_dir_ents);
  
     fs_directory *directory = (fs_directory*)malloc(sizeof(fs_directory));
 
+    //Init the directory struct 
     directory->d_de_start_location = LBA_dir_ents;
     directory->d_de_blocks = blockCountDE;
     directory->d_inode_start_location = LBA_inodes;
@@ -85,7 +79,6 @@ uint64_t fs_init(/*freeSpace * vector*/){
     directory->d_num_inodes = actualNumInode;
     directory->d_num_DEs = actualNumInode;
     uint64_t LBA_root_directory = findMultipleBlocks(1);
-    //uint64_t LBA_root_directory = 64; // only for test
     LBAwrite(directory, 1, LBA_root_directory);
     fs_DIR.LBA_root_directory = LBA_root_directory;
     free(inodes);
@@ -97,15 +90,6 @@ uint64_t fs_init(/*freeSpace * vector*/){
     return LBA_root_directory;
 }
 
-/****************************************************
-* @parameters 
-*   @type const char* : the file name to add as dir
-*		@type mode_t: a 3digit oct number represent the 
-*									access mode ie. 0777;
-* @return
-*   @type int: 0 means succes, 1 means fail
-* This function create a new direcotry 
-****************************************************/
 int fs_mkdir(const char *pathname, mode_t mode){
     int success_status = 1;
     char *abslpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
@@ -156,14 +140,6 @@ int fs_mkdir(const char *pathname, mode_t mode){
     return success_status;
 }
 
-/****************************************************
-* @parameters 
-*   @type const char* : the dir name to be removed
-* This function remove a directory (if exist)
-* @return
-*   @type int: 0 means success, 1 means fail
-* !Need to validte whether is direcotry before execute
-****************************************************/
 int fs_rmdir(const char *pathname){
     int success_rmdir = 0;
     char *abslpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
@@ -217,22 +193,13 @@ int fs_rmdir(const char *pathname){
    return success_rmdir;
 }
 
-/****************************************************
-* @parameters 
-*   @type const char* : the dir (fullpath) need to be 
-*		                opened and iterated.
-* @return
-*   @type fdDir* : a struct hold the current direcoty
-*	info to iterate the children
-* This function opens a dir(fullpath) to iterate the
-*	children of them
-****************************************************/
 fdDir * fs_opendir(const char *name){
     splitDIR *spdir = split_dir(name);
     fdDir *dirp = malloc(sizeof(fdDir));
     dirp->cur_pos = 0;
     uint32_t de_pos = find_DE_pos(spdir);
     if(de_pos == UINT_MAX){
+        //If not found 
         char *filename = *(spdir->dir_names + (spdir->length - 1));
         printf("no such file or direcotry: %s\n", filename);
         free_split_dir(spdir);
@@ -249,6 +216,7 @@ fdDir * fs_opendir(const char *name){
     uint32_t count_children = 0;
     uint32_t current_parent_inode;
     uint32_t parent_dotdot_inode = (directory->d_dir_ents + parent_inode)->de_dotdot_inode;
+    //Located the DEs
     for(int i = 1; i < directory->d_num_DEs; ++i){
         current_parent_inode = (directory->d_dir_ents + i)->de_dotdot_inode;
         if(current_parent_inode == parent_inode){
@@ -265,6 +233,7 @@ fdDir * fs_opendir(const char *name){
     (*(dirp->children + 1))-> file_type = (directory->d_inodes + parent_dotdot_inode)->fs_entry_type;
     strcpy(((*(dirp->children + 1))-> d_name), "..");
     int pos = 2;
+    //Initial childrens iteminfo
     for(int i = 1; i < directory->d_num_DEs; ++i){
         fs_de *current_dir_ent = (directory->d_dir_ents + i);
         fs_inode *current_inode = (directory->d_inodes + i);
@@ -287,17 +256,6 @@ fdDir * fs_opendir(const char *name){
    return dirp;
 }
 
-/****************************************************
-* @parameters 
-*   @type fdDir* : the struct hold current dir-
-*			-ectory info to iterate the children 
-* @return
-*   @type struct dirinteminfo* : a struct hold the 
-*			children info includes name and type;
-* This function is used to itreate the children of 
-*	the given struct(fdDir) for a direcotry
-****************************************************/
-
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
     struct fs_diriteminfo *di = NULL;
     // Iterated the the children one by one, return NULL if finish
@@ -308,14 +266,6 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp){
     return di;
 }
 
-/****************************************************
-* @parameters 
-*   @type fdDir* : the direcotry struct fdDir to close
-* @return
-*   @type int: 0 is success, 1 is fail
-* This function is used to close and clean the fdDir
-* object and do something to close the itreation
-****************************************************/
 int fs_closedir(fdDir *dirp){
     for(int i = 0; i < dirp->num_children; ++i){
         free(*(dirp->children + i));
@@ -328,15 +278,6 @@ int fs_closedir(fdDir *dirp){
     return 0;
 }
 
-/****************************************************
-* @parameters 
-*   @type char*: buf to store the cwd info
-@		@type size_t: the size of given buf;
-* @return
-*   @type char*: the cwd info (not the buf);
-* This function is used to get the current working
-*	directory.
-****************************************************/
 char * fs_getcwd(char *buf, size_t size){
    char *cwd = malloc(sizeof(char)*(size + 1));
    strcpy(cwd, fs_DIR.cwd);
@@ -346,23 +287,13 @@ char * fs_getcwd(char *buf, size_t size){
    return cwd;
 }
 
-/****************************************************
-* @parameters 
-*   @type char*: the path info to change cwd
-* @return
-*   @type int : 0 is success, 1 is fail;
-* This function is used to change the current working
-* directory
-****************************************************/
 int fs_setcwd(char *buf){
     int is_success = 1;
     char *abslpath = NULL;
     abslpath = get_absolute_path(buf);
-    // printf("absolute path is %s\n", abslpath);
     if((abslpath != NULL) && is_Dir(abslpath)){
         is_success = 0;
         strcpy(fs_DIR.cwd, abslpath);
-        // printf("Change cwd to %s\n", fs_DIR.cwd);
     }
     free(abslpath);
     abslpath = NULL;
@@ -370,15 +301,6 @@ int fs_setcwd(char *buf){
     
 }
 
-/****************************************************
-* @parameters 
-*   @type char*: the name of file to check whether it
-*								is the File type
-* @return
-*   @type int: 1 is for File, 0 otherwise
-* This function is used to check whether a given file
-* name is the type File or not
-****************************************************/
 int fs_isFile(char * path){
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     strcpy(fullpath, path);
@@ -387,17 +309,8 @@ int fs_isFile(char * path){
     free(fullpath);
     fullpath = NULL;
     return is_file;
- }//return 1 if file, 0 otherwise
+ }
 
-/****************************************************
-* @parameters 
-*   @type char*: the name of file to check whether it
-*								is the Dir type
-* @return
-*   @type int: 1 is for Dir, 0 otherwise
-* This function is used to check whether a given file
-* name is the type Dir or not
-****************************************************/
 int fs_isDir(char * path){
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     strcpy(fullpath, path);
@@ -408,15 +321,7 @@ int fs_isDir(char * path){
     return is_dir;
 }		//return 1 if directory, 0 otherwise
 
-/****************************************************
-* @parameters 
-*   @type char*: the name of file to delete
-* @return
-*   @type int: 0 is success, 1 is fail
-* This function is used to delete a File
-* !Need to verify whether a given filename is File
-* before calling this function to delete
-****************************************************/
+
 int fs_delete(char* filename){
     int success_delete = 1;
     fs_directory* directory = malloc(MINBLOCKSIZE);
@@ -424,13 +329,12 @@ int fs_delete(char* filename){
 	reload_directory(directory);
     char *abslpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     strcpy(abslpath, filename);
-    printf("run\n");
     abslpath = get_absolute_path(abslpath);
     int is_file = is_File(abslpath);
     splitDIR *spdir = split_dir(abslpath);
-    printf("ablpath is %s\n", abslpath);
-    printf("is File %d\n", is_file);
     if(is_file == 1){
+        //If it is file, release the space and
+        //detached it from the system.
         uint32_t de_pos = find_DE_pos(spdir);
         fs_de *de = (directory->d_dir_ents + de_pos);
         uint32_t inode_pos = de->de_inode;
@@ -438,8 +342,6 @@ int fs_delete(char* filename){
         de->de_dotdot_inode = UINT_MAX;
         fs_inode *inode = (directory->d_inodes + inode_pos);
         freeSomeBits(inode->fs_address, inode->fs_blocks);
-        // free  inode->fs_address (this is the LBA to free)
-        /*to-do free space of the file (inode find address*/
         inode->fs_size = sizeof(fs_de);
         inode->fs_blksize = 0;
         inode->fs_blocks = 0;
@@ -457,16 +359,6 @@ int fs_delete(char* filename){
     return success_delete;
 }	//removes a file
 
-/****************************************************
-* @parameters 
-*   @type char*: the name of file to get info for
-*		@type struct fs_stat*: fs_stat struct to hold
-8													file info.
-* @return
-*   @type int: 0 is success, 1 is fail
-* This function is used for the ls command to 
-* iterate the info of each file(children)
-****************************************************/
 int fs_stat(const char *path, struct fs_stat *buf){
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);

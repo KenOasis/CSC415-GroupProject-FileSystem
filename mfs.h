@@ -73,37 +73,39 @@ typedef struct {
 *                  of the directory entry
 * @return
 *   @type uint64_int: LBA address of directory
-* This function return the position of the next free
-* directory entry.
+* Initialized the directory structure included the 
+* directory entries and inodes
+
 * it has a initial direcoty as:
 *                    root
 *                      |
 *                    Users
 *                      |
-*            Admin   Guest  Jimmy
+*            Admin   Guest  Group
 *
-*   the init cwd is root/Users
+*   the initial cwd is root/Users
 ****************************************************/
 uint64_t fs_init();
 
 /****************************************************
 * @parameters 
 *   @type const char* : the file name to add as dir
-*		@type mode_t: a 3digit oct number represent the 
-*									access mode ie. 0777;
+*		@type mode_t: a 3digit oct number represent ac-
+*								-cess mode (not implemeted)
 * @return
 *   @type int: 1 means success, 0 means fail
-* This function create a new direcotry 
+* Created a new direcotry 
 ****************************************************/
 int fs_mkdir(const char *pathname, mode_t mode);
 
 /****************************************************
 * @parameters 
 *   @type const char* : the dir name to be removed
-* This function remove a directory (if exist)
 * @return
 *   @type int: 1 means success, 0 means fail
-* !Need to validte whether is direcotry before execute
+* Removing a direcotry from the system.
+* Attention :Need to validte whether it is 
+* direcotry before calling this function
 ****************************************************/
 int fs_rmdir(const char *pathname);
 
@@ -112,10 +114,8 @@ int fs_rmdir(const char *pathname);
 *   @type const char* : the dir (fullpath) need to be 
 *												opened and iterated.
 * @return
-*   @type fdDir* : a struct hold the current direcoty
-*									info to iterate the children
-* This function opens a dir(fullpath) to iterate the
-*	children of them
+*   @type fdDir* : a struct to iterated the cwd
+* Opens a dir to iterate the children of it
 ****************************************************/
 fdDir * fs_opendir(const char *name);
 
@@ -124,10 +124,8 @@ fdDir * fs_opendir(const char *name);
 *   @type fdDir* : the struct hold current dir-
 *			-ectory info to iterate the children 
 * @return
-*   @type struct dirinteminfo* : a struct hold the 
-*			children info includes name and type;
-* This function is used to itreate the children of 
-*	the given struct(fdDir) for a direcotry
+*   @type struct dirinteminfo* : NULL is ended
+* Retured the next ls iteminfo, NULL as ended
 ****************************************************/
 struct fs_diriteminfo *fs_readdir(fdDir *dirp);
 
@@ -136,8 +134,7 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp);
 *   @type fdDir* : the direcotry struct fdDir to close
 * @return
 *   @type int: 1 is success, 0 is fail
-* This function is used to close and clean the fdDir
-* object and do something to close the itreation
+* Closed and cleaned the fdDir object
 ****************************************************/
 int fs_closedir(fdDir *dirp);
 
@@ -147,8 +144,7 @@ int fs_closedir(fdDir *dirp);
 @		@type size_t: the size of given buf;
 * @return
 *   @type char*: the cwd info (not the buf);
-* This function is used to get the current working
-*	directory.
+* Getting the current working directory(cwd).
 ****************************************************/
 char * fs_getcwd(char *buf, size_t size);
 
@@ -157,43 +153,41 @@ char * fs_getcwd(char *buf, size_t size);
 *   @type char*: the path info to change cwd
 * @return
 *   @type int : 1 is success, 0 is fail;
-* This function is used to change the current working
-* directory
+* This function is used to change the current 
+* working directory
 ****************************************************/
 int fs_setcwd(char *buf);   //linux chdirs
 
 /****************************************************
 * @parameters 
-*   @type char*: the name of file to check whether it
-*								is the File type
+*   @type char*: the path to checked
 * @return
 *   @type int: 1 is for File, 0 otherwise
-* This function is used to check whether a given file
-* name is the type File or not
+* If the given path existed, then validated it 
+* whether is File
 ****************************************************/
 int fs_isFile(char * path);	//return 1 if file, 0 otherwise
 
 /****************************************************
 * @parameters 
-*   @type char*: the name of file to check whether it
-*								is the Dir type
+*   @type char*: the path to be checked
 * @return
 *   @type int: 1 is for Dir, 0 otherwise
-* This function is used to check whether a given file
-* name is the type Dir or not
+* If the given path existed, then validated it 
+* whether is Dir
 ****************************************************/
 int fs_isDir(char * path);		//return 1 if directory, 0 otherwise
 
 /****************************************************
 * @parameters 
-*   @type char*: the name of file to delete
+*   @type char*: the path of the file to deleted
 * @return
 *   @type int: 0 is success, 1 is fail
 * This function is used to delete a File
-* !Need to verify whether a given filename is File
+* !Need to verify whether a given filepath is File
 * before calling this function to delete
 ****************************************************/
-int fs_delete(char* filename);	//removes a file
+int fs_delete(char* filepath);	//removes a file
 
 /****************************************************
 *  struct type to hold the current file info which is
@@ -218,10 +212,20 @@ struct fs_stat
 8													file info.
 * @return
 *   @type int: 1 is success, 0 is fail
-* This function is used for the ls command to 
-* iterate the info of each file(children)
+* Used for the ls command to iterate the info of 
+* each file(children)
 ****************************************************/
 int fs_stat(const char *path, struct fs_stat *buf);
 
+/****************************************************
+* @parameters 
+*   @type char*: the path of the src
+*		@type char*: the path of the dest
+* @return
+*   @type int: 1 is success, 0 is fail
+* Move the src file to the destination location
+* Attention, the dest path should be the direcotry
+* but not ended with a filename.
+****************************************************/
 int fs_move(const char *src, const char* path);
 #endif
