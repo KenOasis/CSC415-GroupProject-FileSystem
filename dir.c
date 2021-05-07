@@ -516,6 +516,7 @@ int setFileBlocks(const char *filename, blkcnt_t count){
 int setFileLBA(const char *filename, uint64_t address){
     // Not check the whether the LBA is available or legal
     int result = 0;
+    printf("set file lba is %lu\n", address);
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
