@@ -346,14 +346,13 @@ uint64_t getFileLBA(const char *filename, int flags){
             // ** To-do free the old LBA space
             // file_inode->fs_address
             // file_inode->fs_blocks
-            
+                file_inode->fs_address = expandFreeSection(file_inode->fs_address, file_inode->fs_blocks, 10);
                 file_inode->fs_blocks = 0;
                 file_inode->fs_size = 0;
             // ** To-do get new allocate space for write
             // 10 blocks as initial ? set them to
             // file_inode->fs_blocks = 10
             // file_inode->fs_addres = ? (new LBA)
-                file_inode->fs_address = expandFreeSection(file_inode->fs_address, file_inode->fs_blocks, 10);
                 file_inode->fs_blocks = 10;
                 result = file_inode->fs_address;
             }else{
