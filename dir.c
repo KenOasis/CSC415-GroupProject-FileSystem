@@ -1,15 +1,7 @@
 #include <string.h>
 #include "dir.h"
 #include "b_io.h"
-/****************************************************
-* @parameters 
-*   @type fs_directory*: directory 
-* @return
-*   @type uint_32: a number represent the position
-*                  of the directory entry
-* This function return the position of the next free
-* directory entry.
-****************************************************/
+
 uint32_t find_free_dir_ent(fs_directory* directory){
     uint32_t free_dir_ent = 0;
     for(int i = 0; i < directory->d_num_DEs; ++i){
@@ -69,13 +61,6 @@ uint32_t find_free_dir_ent(fs_directory* directory){
     return free_dir_ent;
 }
 
-/****************************************************
-* @parameters 
-*   @type fs_directory*: directory
-* @return
-*   @type int: 0 is success, 1 is fail
-* This function reload the directory from LBA space
-****************************************************/
 int reload_directory(fs_directory * directory){
     directory->d_inodes = malloc(MINBLOCKSIZE * (directory->d_inode_blocks));
     directory->d_dir_ents = malloc(MINBLOCKSIZE * (directory->d_de_blocks));
@@ -84,27 +69,12 @@ int reload_directory(fs_directory * directory){
     return 0;
 }
 
-/****************************************************
-* @parameters 
-*   @type fs_directory*: directory
-* @return
-*   @void
-*  Destructor of the directory to free the memory
-*  of the struct type directory
-****************************************************/
 void free_directory(fs_directory *directory){
     free(directory->d_dir_ents);
     free(directory->d_inodes);
     free(directory);
 }
 
-/****************************************************
-* @parameters 
-*   @type fs_directory*: directory
-* @return
-*   @type int: 0 is success, 1 is fail
-* This function write directory back to LBA
-****************************************************/
 int write_directory(fs_directory *directory){
     fs_de * dir_ents = directory->d_dir_ents;
     fs_inode *inodes = directory->d_inodes;
@@ -116,16 +86,6 @@ int write_directory(fs_directory *directory){
     return 0;
 }
 
-/****************************************************
-* @parameters 
-*   @type splitDIR*: a struct hold splited path info
-* @return
-*   @type uint_32: a number represent the position
-*                  of the directory entry, If it equal
-                   UINT_MAX, it means fail
-* This function return the position of the directory
-* entry. 
-****************************************************/
 uint32_t find_DE_pos(splitDIR *spdir){
     uint32_t de_pos = UINT_MAX;
     fs_directory* directory = malloc(MINBLOCKSIZE);
@@ -135,6 +95,7 @@ uint32_t find_DE_pos(splitDIR *spdir){
     int parent_pos = 0;
     int current_parent_pos = 0;
     uint32_t pos = 0;
+    //Tracking from de of the root to the end to validate the path and found the de.
     for(int i = 0; i < (spdir->length); ++i){
         for(int j = 0; j < (directory->d_num_DEs); ++j){
             int not_equal_names = strcmp(*(spdir->dir_names + i),(directory->d_dir_ents + j)->de_name);
@@ -159,17 +120,7 @@ uint32_t find_DE_pos(splitDIR *spdir){
     return de_pos;
 }
 
-/****************************************************
-* @parameters 
-*   @type uint32_t: position of the parent directory
-*                   entry
-*   @type char*: name of the new directory (to be addded)
-* @return
-*   @type int: 1 is duplicate, 0 is not
-* This function check whether the new dir has duplicated
-* name in the parent directory
-****************************************************/
-int is_duplicated_dir(uint32_t parent_de_pos, const char* name){// if return value = 0, means no duplicated
+int is_duplicated_dir(uint32_t parent_de_pos, const char* name){// if return value = 0, means not duplicated
     int is_duplicated = 0;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
@@ -188,15 +139,6 @@ int is_duplicated_dir(uint32_t parent_de_pos, const char* name){// if return val
     return is_duplicated;
 }
 
-/****************************************************
-* @parameters 
-*   @type const char*: path to be splited 
-* @return
-*   @type splitDIR*: a pointer point to a struct splitDIR
-*                    which hold the splited path
-* This function split the given path into seperate names
-* of each level of directory/file
-****************************************************/
 splitDIR* split_dir(const char *name){
     // restart here! add . and .. into childrens
     const char delimiter[2] = "/";
@@ -230,31 +172,12 @@ splitDIR* split_dir(const char *name){
     return sDir;    
 }
 
-/****************************************************
-* @parameters 
-*   @type splitDIR*: the splited path info
-* @return
-*   @type void
-* This destructor to free the allocated memory of 
-* strut type splitDIR
-****************************************************/
 void free_split_dir(splitDIR *spdir){
     for(int i = 0; i < spdir->length; ++i){
         free(*(spdir->dir_names + i));
     }
     free(spdir);
 }
-
-/****************************************************
-* @parameters 
-*   @type char*: the buf hold the cwd part of path
-*   @type char*: the buf hold the argv part of path
-*                which is relative path
-* @return
-*   @type char*: the path of assembly result
-* This function is to tranform the relative path based
-* on the given cwd to the absoluted path from the root
-****************************************************/
 
 char *get_absolute_path(char* argv){
     char* absolute_path = NULL;
@@ -357,6 +280,7 @@ int is_Dir(char *fullpath){
     }
     return is_dir;
 }
+
 char *get_parent_path(char* absolute_path){
     char *parent_path = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     if(strcmp(absolute_path, "root/") == 0){
@@ -371,6 +295,7 @@ char *get_parent_path(char* absolute_path){
     }
     return parent_path;
 }
+
 uint64_t getFileLBA(const char *filepath, int flags){
     //*check whether the dir is exist in the cwd
     uint64_t result = UINT_MAX;
@@ -403,22 +328,13 @@ uint64_t getFileLBA(const char *filepath, int flags){
             fs_inode *file_inode = (directory->d_inodes + file_de_pos);
             strcpy(file_de->de_name, filename);
             if((flags & O_TRUNC) == O_TRUNC){
-            // ** To-do free the old LBA space
-            // file_inode->fs_address
-            // file_inode->fs_blocks
                 file_inode->fs_address = expandFreeSection(file_inode->fs_address, file_inode->fs_blocks, 10);
                 file_inode->fs_blocks = 0;
                 file_inode->fs_size = 0;
-            // ** To-do get new allocate space for write
-            // 10 blocks as initial ? set them to
-            // file_inode->fs_blocks = 10
-            // file_inode->fs_addres = ? (new LBA)
                 file_inode->fs_blocks = 10;
                 result = file_inode->fs_address;
             }else{
                 result = file_inode->fs_address;
-                // printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
-                // printf("address for %s is %lld\n", filename, result);
             }
             write_directory(directory);
             updateModTime(file_de->de_dotdot_inode);
@@ -437,13 +353,11 @@ uint64_t getFileLBA(const char *filepath, int flags){
             new_inode->fs_entry_type = DT_REG;
             strcpy(new_de->de_name, filename);
             //Allocated space (LBA) for file 
-            // Test only
+
             new_inode->fs_address = findMultipleBlocks(10);
-            //new_inode->fs_address = 888;
             new_inode->fs_size = 0;
             new_inode->fs_blocks = 10;
             new_inode->fs_blksize = MINBLOCKSIZE;
-            //End of Test data
             result = new_inode->fs_address;
             write_directory(directory);
             updateModTime(parent_pos);
@@ -527,6 +441,7 @@ int setFileSize(const char *filepath, off_t filesize){
     uint32_t de_pos = find_DE_pos(spdir);
     int is_file = is_File(abslpath);
     if(de_pos!= UINT_MAX && is_file){
+        //Located the inode
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_size = filesize;
         write_directory(directory);
@@ -602,6 +517,7 @@ int setFileLBA(const char *filepath, uint64_t address){
     abslpath = NULL;
     return result;
 }
+
 // Not used
 int updateAccessTime(uint32_t inode){
     fs_directory* directory = malloc(MINBLOCKSIZE);
@@ -663,9 +579,7 @@ int free_stack(stringStack *stack){
     free(stack->strings);
     return 0;
 }
-/****************************************************
-*  helper function to format time output, test only
-****************************************************/
+
 char* display_time(time_t t){
     char *time_str = malloc(sizeof(char) * 32);
     struct tm *ptm = NULL;

@@ -39,7 +39,7 @@ typedef struct{
 * (tree) of the directory/file system
 ****************************************************/
 typedef struct{
-	char de_name[256];
+	char de_name[256]; /* name of the direcctory entry */
 	uint32_t de_inode; /* inode number of current directory */
 	uint32_t de_dotdot_inode; /* inode number of parent direcotry */
 }fs_de;
@@ -67,18 +67,23 @@ struct to hold the global varibale with LBA root
 directory and the cwd
 ****************************************************/
 typedef struct{
+	// the current cwd
 	 char cwd[DIR_MAXLENGTH + 1];
+	// the LBA address of struct directory
 	 uint64_t LBA_root_directory;
 }DirInfo;
 
 /****************************************************
-struct to hold splited name of each level of dir name
+struct to hold the splited of the path
 ****************************************************/
 typedef struct{
 	int length;
 	char **dir_names;
 }splitDIR;
 
+/****************************************************
+struct for string stacks 
+****************************************************/
 typedef struct{
 	int capacity;
 	int top; // point to the postion after the top
@@ -88,12 +93,12 @@ typedef struct{
 
 /****************************************************
 * @parameters 
-*   @type fs_directory*: directory 
+*   @type fs_directory*: pointer to a  
 * @return
-*   @type uint_32: a number represent the position
-*                  of the directory entry
-* This function return the position of the next free
-* directory entry.
+*   @type uint_32: the next available position of 
+*	  	directory entry, return UINT_MAX as failed
+*	Return the next available position of directory
+*	entries
 ****************************************************/
 uint32_t find_free_dir_ent(fs_directory *directory);
 
@@ -102,8 +107,7 @@ uint32_t find_free_dir_ent(fs_directory *directory);
 *   @type fs_directory*: directory
 * @return
 *   @type int: 0 is success, 1 is fail
-* This function reload the directory from LBA space
-****************************************************/
+* Reload the directory info from disk(LBA);	****************************************************/
 int reload_directory(fs_directory *directory);
 
 /****************************************************
@@ -111,29 +115,29 @@ int reload_directory(fs_directory *directory);
 *   @type fs_directory*: directory
 * @return
 *   @void
-*  Destructor of the directory to free the memory
-*  of the struct type directory
+*  Destructor of the fs_directory to free allocated
+*  memory
 ****************************************************/
-int write_directory(fs_directory *directory);
+void free_directory(fs_directory* directory);
 
 /****************************************************
 * @parameters 
 *   @type fs_directory*: directory
 * @return
 *   @type int: 0 is success, 1 is fail
-* This function write directory back to LBA
+* Written directory info back to LBA
 ****************************************************/
-void free_directory(fs_directory* directory);
+int write_directory(fs_directory *directory);
 
 /****************************************************
 * @parameters 
 *   @type splitDIR*: a struct hold splited path info
 * @return
 *   @type uint_32: a number represent the position
-*                  of the directory entry, If it equal
-                   UINT32_MAX, it means fail
-* This function return the position of the directory
-* entry. 
+*      of the directory entry, return UINT32_MAX, it 
+*		   means fail
+* Returned the position of the a given path which
+* hold by the splitDIR object, UINT_MAX means fail
 ****************************************************/
 uint32_t find_DE_pos(splitDIR *spdir);
 
@@ -144,8 +148,7 @@ uint32_t find_DE_pos(splitDIR *spdir);
 *   @type char*: name of the new directory (to be addded)
 * @return
 *   @type int: 1 is duplicate, 0 is not
-* This function check whether the new dir has duplicated
-* name in the parent directory
+* Checked whether the given file/directory are duplicated *under the given parent pos.
 ****************************************************/
 int is_duplicated_dir(uint32_t parent_de_pos, const char* name);
 
@@ -155,8 +158,8 @@ int is_duplicated_dir(uint32_t parent_de_pos, const char* name);
 * @return
 *   @type splitDIR*: a pointer point to a struct splitDIR
 *                    which hold the splited path
-* This function split the given path into seperate names
-* of each level of directory/file
+* Spliting the given path into seperate names of each
+* level of directory, the delimeter is '/'
 ****************************************************/
 splitDIR* split_dir(const char *name);
 
@@ -165,44 +168,171 @@ splitDIR* split_dir(const char *name);
 *   @type splitDIR*: the splited path info
 * @return
 *   @type void
-* This destructor to free the allocated memory of 
-* strut type splitDIR
+* Destructor to free the allocated memory of strut type  *splitDIR allocated
 ****************************************************/
 void free_split_dir(splitDIR *spdir);
 
-
-
+/****************************************************
+* @parameters 
+*   @type char*: the string represent a relitive path
+* @return
+*   @type char*: the absoluted path
+* Transformed the relative path(of cwd) to the absolute
+* path (from "root/") 
+****************************************************/
 char *get_absolute_path(char* argv);
 
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the absolute path
+* @return
+*   @type int: 1 is the File type, 0 is not
+* Checking whether a given path is a File or not
+****************************************************/
 int is_File(char *fullpath);
+
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the absolute path
+* @return
+*   @type int: 1 is the Dir type, 0 is not
+* Checking whether a given path is a Dir or not
+****************************************************/
 int is_Dir(char *fullpath);
 
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the absolute path
+* @return
+*   @type char*: the parent path of the given path
+* Getting the parent path of the given path
+****************************************************/
 char *get_parent_path(char* absolute_path);
+
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the file
+*		@type int: flags of accessmode 			
+* @return
+*   @type uint64_t: LBA location of the file
+* Returned the LBA of the file to do read. UINT_MAX 
+* means fail.
+****************************************************/
 uint64_t getFileLBA(const char *filename, int flags);
 
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the file		
+* @return
+*   @type uint64_t: the allocated block of the file
+* Returned the number of the allocated blocks of file
+****************************************************/
 blkcnt_t getBlocks(const char *filename);
 
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the file		
+* @return
+*   @type off_t: the size of the file
+* Returned the actual size of file
+****************************************************/
 off_t getFileSize(const char *filename);
 
+
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the file
+*		@type off_t: the size of the file		
+* @return
+*   @type int: 1 means success, 0 means fail
+* Setting the size of the file (for b_io.c usage)
+****************************************************/
 int setFileSize(const char *filename, off_t filesize);
 
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the file
+*		@type blkcnt_t: the allocated block to the file		
+* @return
+*   @type int: 1 means success, 0 means fail
+* Setting the number of allocated block of the file 
+* (for b_io.c usage)
+****************************************************/
 int setFileBlocks(const char *filename, blkcnt_t count);
 
+/****************************************************
+* @parameters 
+*   @type char*: the string represent the file
+*		@type uint64_t: the LBA address of the file		
+* @return
+*   @type int: 1 means success, 0 means fail
+* Setting the address of the file (for b_io.c usage)
+****************************************************/
 int setFileLBA(const char *filename, uint64_t Address);
 
-stringStack* initStack(int capacity);
-
-int pushIntoStack(stringStack* stack, char* string);
-
-char* popFromStack(stringStack* stack);
-
-int free_stack(stringStack* stack);
+/****************************************************
+ * !!This funtion is not used in system yet.
+* @parameters 
+*   @type uint32_t: the inode number(position)	
+* @return
+*   @type int: 1 means success, 0 means fail
+* Updating the accesstime of the inode
+****************************************************/
 int updateAccessTime(uint32_t inode);
 
+/****************************************************
+* @parameters 
+*   @type uint32_t: the inode number(position)	
+* @return
+*   @type int: 1 means success, 0 means fail
+* Updating the modification time of the inode
+****************************************************/
 int updateModTime(uint32_t inode);
 
 /****************************************************
-*  helper function to format time output, test only
+* @parameters 
+*   @type int: the capacity of the stack
+* @return
+*   @type stringStack*: the pointer to the stack
+* Initial a stack holding strings
+****************************************************/
+stringStack* initStack(int capacity);
+
+/****************************************************
+* @parameters 
+*   @type stringStack*: the stack
+*		@type char*: the string to be pushed
+* @return
+*   @type int: 0 means success, 1 is fail
+* Pushing a string into stack 
+****************************************************/
+int pushIntoStack(stringStack* stack, char* string);
+
+/****************************************************
+* @parameters 
+*		@type stringStack*: the stack
+* @return
+*   @type char*: the string poped out, NULL as fail
+* Poping out the top item in the stack
+****************************************************/
+char* popFromStack(stringStack* stack);
+
+
+/****************************************************
+* @parameters 
+*		@type stringStack*: the stack
+* @return
+*   @type int: 0 is success, 1 is failed
+* Deconstructor of the stack
+****************************************************/
+int free_stack(stringStack* stack);
+
+/****************************************************
+* @parameters 
+*		@type time_t: time to be displayed
+* @return
+*   @type char*: formatted ouoput of the time
+* Formater of the time (for command ls)
 ****************************************************/
 char* display_time(time_t t); 
 
