@@ -176,6 +176,8 @@ char *get_absolute_path(char* argv);
 
 int is_File(char *fullpath);
 int is_Dir(char *fullpath);
+
+char *get_parent_path(char* absolute_path);
 uint64_t getFileLBA(const char *filename, int flags);
 
 blkcnt_t getBlocks(const char *filename);

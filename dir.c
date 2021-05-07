@@ -357,30 +357,47 @@ int is_Dir(char *fullpath){
     }
     return is_dir;
 }
-uint64_t getFileLBA(const char *filename, int flags){
+char *get_parent_path(char* absolute_path){
+    char *parent_path = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    if(strcmp(absolute_path, "root/") == 0){
+        strcpy(parent_path, absolute_path);
+    }else{
+        char *last_delimeter = strrchr(absolute_path, '/');
+        parent_path = strncpy(parent_path,absolute_path, last_delimeter - absolute_path);
+        parent_path[last_delimeter - absolute_path] = 0;
+    }
+    if(strcmp(parent_path, "root") == 0){
+        strcpy(parent_path, "root/");
+    }
+    return parent_path;
+}
+uint64_t getFileLBA(const char *filepath, int flags){
     //*check whether the dir is exist in the cwd
     uint64_t result = UINT_MAX;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    char *cwd = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    char *fullpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    strcpy(cwd, fs_DIR.cwd);
-    splitDIR *spdir = split_dir(cwd);
-    fullpath = strcat(cwd, "/");
-    fullpath = strcat(fullpath, filename);   
+    char *buf = malloc(sizeof(char) *(DIR_MAXLENGTH + 1));
+    strcpy(buf, filepath);
+    char* abslpath = get_absolute_path(buf);
+    char* parent_path = get_parent_path(abslpath);
+    char* last_delimeter = strrchr(abslpath, '/');
+    int last_delimeter_pos = last_delimeter - abslpath;
+    char* filename = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    filename = strncpy(filename, (abslpath + last_delimeter_pos + 1), strlen(abslpath) - last_delimeter_pos);
+    splitDIR *spdir = split_dir(parent_path);
     uint32_t parent_pos = find_DE_pos(spdir);
     int is_duplicated = is_duplicated_dir(parent_pos, filename);
     int is_file = 0;
     if(is_duplicated){
-        is_file = is_File(fullpath);
+        is_file = is_File(abslpath);
     }
+    // printf("%s is dup ?%d is file ? %d \n", abslpath, is_duplicated, is_file);
     if(is_duplicated){
         if(!is_file){
             printf("open: %s exist in system as directory\n", filename);
-            result = UINT_MAX;
         }else{
-            splitDIR *file_spdir = split_dir(fullpath);
+            splitDIR *file_spdir = split_dir(abslpath);
             uint32_t file_de_pos = find_DE_pos(file_spdir);
             fs_de *file_de = (directory->d_dir_ents + file_de_pos);
             fs_inode *file_inode = (directory->d_inodes + file_de_pos);
@@ -411,45 +428,49 @@ uint64_t getFileLBA(const char *filename, int flags){
         }
     }else if((flags & O_CREAT) == O_CREAT){
         // No same name dir or file exist
-        uint32_t new_de_pos = find_free_dir_ent(directory);
-        fs_de *new_de = (directory->d_dir_ents + new_de_pos);
-        new_de -> de_dotdot_inode = parent_pos;
-        fs_inode *new_inode = (directory->d_inodes + new_de_pos);
-        new_inode->fs_entry_type = DT_REG;
-        strcpy(new_de->de_name, filename);
-        //Allocated space (LBA) for file 
-        // Test only
-        new_inode->fs_address = findMultipleBlocks(10);
-        //new_inode->fs_address = 888;
-        new_inode->fs_size = 0;
-        new_inode->fs_blocks = 10;
-        new_inode->fs_blksize = MINBLOCKSIZE;
-        //End of Test data
-        result = new_inode->fs_address;
-        write_directory(directory);
-        updateModTime(parent_pos);
-        updateModTime(new_de_pos);
-        new_de = NULL;
-        new_inode = NULL;
+        int is_parent_exists = is_Dir(parent_path);
+        if(is_parent_exists){
+            uint32_t new_de_pos = find_free_dir_ent(directory);
+            fs_de *new_de = (directory->d_dir_ents + new_de_pos);
+            new_de -> de_dotdot_inode = parent_pos;
+            fs_inode *new_inode = (directory->d_inodes + new_de_pos);
+            new_inode->fs_entry_type = DT_REG;
+            strcpy(new_de->de_name, filename);
+            //Allocated space (LBA) for file 
+            // Test only
+            new_inode->fs_address = findMultipleBlocks(10);
+            //new_inode->fs_address = 888;
+            new_inode->fs_size = 0;
+            new_inode->fs_blocks = 10;
+            new_inode->fs_blksize = MINBLOCKSIZE;
+            //End of Test data
+            result = new_inode->fs_address;
+            write_directory(directory);
+            updateModTime(parent_pos);
+            updateModTime(new_de_pos);
+            new_de = NULL;
+            new_inode = NULL;
+        }else{
+            printf("Can not create new file %s\n", filepath);
+        }
     }else{
-        printf("File %s not exist\n",filename);
+        printf("File %s not exist\n",filepath);
         result = UINT_MAX;
     }
     return result;
 }
 
-blkcnt_t getBlocks(const char *filename){
+blkcnt_t getBlocks(const char *filepath){
     blkcnt_t result = 0;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    char *fullpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    strcpy(fullpath, fs_DIR.cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, filename);
-    splitDIR *spdir = split_dir(fullpath);
+    char *abslpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
+    strcpy(abslpath, filepath);
+    abslpath = get_absolute_path(abslpath);
+    splitDIR *spdir = split_dir(abslpath);
     uint32_t de_pos = find_DE_pos(spdir);
-    int is_file = is_File(fullpath);
+    int is_file = is_File(abslpath);
     if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         result = (directory->d_inodes + inode_num)->fs_blocks;
@@ -459,25 +480,24 @@ blkcnt_t getBlocks(const char *filename){
     }
     free_directory(directory);
     free_split_dir(spdir);
-    free(fullpath);
+    free(abslpath);
     directory = NULL;
     spdir = NULL;
-    fullpath = NULL;
+    abslpath = NULL;
     return result;
 }
 
-off_t getFileSize(const char *filename){
+off_t getFileSize(const char *filepath){
     off_t result = 0;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    char *fullpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    strcpy(fullpath, fs_DIR.cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, filename);
-    splitDIR *spdir = split_dir(fullpath);
+    char *abslpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
+    strcpy(abslpath, filepath);
+    abslpath = get_absolute_path(abslpath);
+    splitDIR *spdir = split_dir(abslpath);
     uint32_t de_pos = find_DE_pos(spdir);
-    int is_file = is_File(fullpath);
+    int is_file = is_File(abslpath);
     if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         result = (directory->d_inodes + inode_num)->fs_size;
@@ -487,26 +507,25 @@ off_t getFileSize(const char *filename){
     }
     free_directory(directory);
     free_split_dir(spdir);
-    free(fullpath);
+    free(abslpath);
     directory = NULL;
     spdir = NULL;
-    fullpath = NULL;
+    abslpath = NULL;
     return result;
     return 0;
 }
 
-int setFileSize(const char *filename, off_t filesize){
+int setFileSize(const char *filepath, off_t filesize){
     int result = 0;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    char *fullpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    strcpy(fullpath, fs_DIR.cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, filename);
-    splitDIR *spdir = split_dir(fullpath);
+    char *abslpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
+    strcpy(abslpath, filepath);
+    abslpath = get_absolute_path(abslpath);
+    splitDIR *spdir = split_dir(abslpath);
     uint32_t de_pos = find_DE_pos(spdir);
-    int is_file = is_File(fullpath);
+    int is_file = is_File(abslpath);
     if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_size = filesize;
@@ -518,25 +537,24 @@ int setFileSize(const char *filename, off_t filesize){
     }
     free_directory(directory);
     free_split_dir(spdir);
-    free(fullpath);
+    free(abslpath);
     directory = NULL;
     spdir = NULL;
-    fullpath = NULL;
+    abslpath = NULL;
     return result;
 }
 
-int setFileBlocks(const char *filename, blkcnt_t count){
+int setFileBlocks(const char *filepath, blkcnt_t count){
     int result = 0;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    char *fullpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    strcpy(fullpath, fs_DIR.cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, filename);
-    splitDIR *spdir = split_dir(fullpath);
+    char *abslpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
+    strcpy(abslpath, filepath);
+    abslpath = get_absolute_path(abslpath);
+    splitDIR *spdir = split_dir(abslpath);
     uint32_t de_pos = find_DE_pos(spdir);
-    int is_file = is_File(fullpath);
+    int is_file = is_File(abslpath);
     if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_blocks = count;
@@ -548,26 +566,25 @@ int setFileBlocks(const char *filename, blkcnt_t count){
     }
     free_directory(directory);
     free_split_dir(spdir);
-    free(fullpath);
+    free(abslpath);
     directory = NULL;
     spdir = NULL;
-    fullpath = NULL;
+    abslpath = NULL;
     return result;
 }
 
-int setFileLBA(const char *filename, uint64_t address){
+int setFileLBA(const char *filepath, uint64_t address){
     // Not check the whether the LBA is available or legal
     int result = 0;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    char *fullpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    strcpy(fullpath, fs_DIR.cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, filename);
-    splitDIR *spdir = split_dir(fullpath);
+    char *abslpath = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
+    strcpy(abslpath, filepath);
+    abslpath = get_absolute_path(abslpath);
+    splitDIR *spdir = split_dir(abslpath);
     uint32_t de_pos = find_DE_pos(spdir);
-    int is_file = is_File(fullpath);
+    int is_file = is_File(abslpath);
     if(de_pos!= UINT_MAX && is_file){
         uint32_t inode_num = (directory->d_dir_ents + de_pos)->de_inode;
         (directory->d_inodes + inode_num)->fs_address = address;
@@ -579,10 +596,10 @@ int setFileLBA(const char *filename, uint64_t address){
     }
     free_directory(directory);
     free_split_dir(spdir);
-    free(fullpath);
+    free(abslpath);
     directory = NULL;
     spdir = NULL;
-    fullpath = NULL;
+    abslpath = NULL;
     return result;
 }
 // Not used
