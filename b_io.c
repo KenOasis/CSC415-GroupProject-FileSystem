@@ -52,7 +52,7 @@ int startup = 0;	//Indicates that this has not been initialized
 
 char write_Buffer[BUFSIZE]; // Stack Allocated Array and Counter
 
-//Method to initialize our file system
+// helper function to initialize our file system
 void b_init ()
 {
 	//init fcbArray to all free
@@ -64,7 +64,7 @@ void b_init ()
 	startup = 1;
 }
 
-//Method to get a free FCB element, intialize fcbStatus
+// helper function to get a free FCB element, intialize fcbStatus
 int b_getFCB ()
 {
 	for (int i = 0; i < MAXFCBS; i++)
@@ -77,7 +77,39 @@ int b_getFCB ()
 	}
 	return -1;  //all in use
 }
-	
+
+// helper function to write the remaning part in buffer to the file 
+void copy_last_write_buffer(int fd) {
+	// Copy remaining bytes from the write buffer to the file
+	// When the indicator is true, we know that there are some remaining to write
+	if (fcbArray[fd].writeBufferNonEmpty) {
+		// Convert fileSize to how many blocks the file is taking
+		int fileUsedBlocks = floor(fcbArray[fd].fileSize / MINBLOCKSIZE);
+		// check if all allocated blocks have been used
+		if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { // if all have been used
+			// int res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
+			int res = 999; // fake
+			if (res == -1) {
+				printf("ERROR: Write failed");
+			}
+			// Update LBA and blocks allocated in fcb
+			fcbArray[fd].startingLBA = res;
+			fcbArray[fd].fileBlocksAllocated += 10;	
+		}
+
+		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
+
+		// update
+		fcbArray[fd].fileSize += fcbArray[fd].index;
+		fcbArray[fd].writeBufferNonEmpty = false;
+	}
+	// update a few meta info about the file to directory
+	setFileSize(fcbArray[fd].fileName, fcbArray[fd].fileSize);
+	setFileBlocks(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
+	setFileLBA(fcbArray[fd].fileName, fcbArray[fd].startingLBA);
+
+}
+
 
 // Interface to open a buffered file
 int b_open (char * filename, int flags)
@@ -366,32 +398,7 @@ int b_seek(int fd, off_t offset, int whence){
 // Interface to Close the file	
 void b_close (int fd)
 {
-	// Add the end of the file remained in the write buffer
-	// When the indicator is true, we know that there are some remaining to write
-	if (fcbArray[fd].writeBufferNonEmpty) {
-		// Get the block that we are writing in disk
-		int cursorInDisk = fcbArray[fd].cursor / MINBLOCKSIZE;
-		// check if all allocated blocks have been used
-		if (cursorInDisk == fcbArray[fd].fileBlocksAllocated) { // if all have been used
-			u_int64_t res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
-			if (res == 0) {
-				printf("ERROR: Write failed");
-			}
-			// Update LBA and blocks allocated in fcb
-			fcbArray[fd].startingLBA = res;
-			fcbArray[fd].fileBlocksAllocated += 10;	
-		}
-
-		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
-
-		// update
-		fcbArray[fd].fileSize += fcbArray[fd].index;
-		fcbArray[fd].writeBufferNonEmpty = false;
-	}
-	// update a few meta info about the file to directory
-	setFileSize(fcbArray[fd].fileName, fcbArray[fd].fileSize);
-	setFileBlocks(fcbArray[fd].fileName, fcbArray[fd].fileBlocksAllocated);
-	setFileLBA(fcbArray[fd].fileName, fcbArray[fd].startingLBA);
+	copy_last_write_buffer(fd);
 
 	// reset fcb values
 	fcbArray[fd].buflen = 0;
