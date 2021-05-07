@@ -1,15 +1,18 @@
 /***********************************************************************************
+* Class:  CSC-415-02 Spring 2021
 * Names: Zhuozhuo Liu, Jinjian Tan, Yunhao Wang (Mike on iLearn), Chu Cheng Situ
 * Student ID: 921410045 (Zhuozhuo), 921383408 (Jinjian), 921458509 (Yunhao), 921409278 (Chu Cheng)
 * GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu (Chu Cheng)
 * Group Name: return 0
-* Class: CSC 415 Spring 2021- Section 2
-* GitHub Repository Link: https://github.com/KenOasis/CSC415-GroupProject-FileSystem.git
+* Project: Group Project – File System
+*
 * File: dir.h
+*
 * Description:
 *   Declaring the internal helper function for implementing the file system(under_score_names), and some 
-* interface for b_io.c for accessing the metadata
-* of the file(carmelNames)
+* 	interface for b_io.c for accessing the metadata
+* 	of the file(carmelNames)
+*
 **************************************************************************************/
 
 #ifndef _DIR_H
