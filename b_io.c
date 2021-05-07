@@ -28,7 +28,6 @@
 #include "freeSpace.h"
 
 #define MAXFCBS 20
-#define BUFSIZE 512
 #define GETMOREBLOCKS 10
 
 typedef struct b_fcb
@@ -50,7 +49,7 @@ b_fcb fcbArray[MAXFCBS];
 
 int startup = 0;	//Indicates that this has not been initialized
 
-char write_Buffer[BUFSIZE]; // Stack Allocated Array and Counter
+char write_Buffer[MINBLOCKSIZE]; // Stack Allocated Array and Counter
 
 // helper function to initialize our file system
 void b_init ()
@@ -78,7 +77,7 @@ int b_getFCB ()
 	return -1;  //all in use
 }
 
-// helper function to write the remaning part in buffer to the file 
+// helper function to write the last remaning part in buffer to the file (usually during b_close or b_seek)
 void copy_last_write_buffer(int fd) {
 	// Copy remaining bytes from the write buffer to the file
 	// When the indicator is true, we know that there are some remaining to write
@@ -114,30 +113,30 @@ void copy_last_write_buffer(int fd) {
 // Interface to open a buffered file
 int b_open (char * filename, int flags)
 {
-	int returnFd;
+	int fd;
 	if (startup == 0) b_init();  //Initialize our system
 	
 	// check if all 20 spots are used at the same time
-	returnFd = b_getFCB();				// find an available spot, get our own file descriptor
-	if (returnFd  == -1) {
+	fd = b_getFCB();				// find an available spot, get our own file descriptor
+	if (fd  == -1) {
 		return -1;						// no spot available, all 20 files are used, not able to open
 	}				
 	
 	// allocate our buffer
-	fcbArray[returnFd].buf = malloc (BUFSIZE);
-	if (fcbArray[returnFd].buf  == NULL)
+	fcbArray[fd].buf = malloc (MINBLOCKSIZE);
+	if (fcbArray[fd].buf  == NULL)
 	{
 		// very bad, we can not allocate our buffer
-		fcbArray[returnFd].fcbStatus = -1; 	// free FCB
+		fcbArray[fd].fcbStatus = -1; 	// free FCB
 		return -1;
 	}
 	
 	// initialize other fcb properties
-	fcbArray[returnFd].fileName = filename; // save the filename
-	fcbArray[returnFd].buflen = 0; 			// have not read anything yet
-	fcbArray[returnFd].index = 0;			// have not read anything yet
-	fcbArray[returnFd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
-	fcbArray[returnFd].cursor = 0;
+	fcbArray[fd].fileName = filename; // save the filename
+	fcbArray[fd].buflen = 0; 			// have not read anything yet
+	fcbArray[fd].index = 0;			// have not read anything yet
+	fcbArray[fd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
+	fcbArray[fd].cursor = 0;
 
 	// Get file meta data from directory
 	int res = getFileLBA(filename, flags);
@@ -146,27 +145,40 @@ int b_open (char * filename, int flags)
 		printf("ERROR: Failed to open.\n");
 		return -1;
 	}
-	fcbArray[returnFd].startingLBA = res; 
-	fcbArray[returnFd].fileBlocksAllocated = getBlocks(filename);
-	fcbArray[returnFd].fileSize = getFileSize(filename);
+	fcbArray[fd].startingLBA = res; 
+	fcbArray[fd].fileBlocksAllocated = getBlocks(filename);
+	fcbArray[fd].fileSize = getFileSize(filename);
 
-	// O_RDWR: we do not support currently
+	// O_RDWR: we do not support read currently
 	if ((flags & O_ACCMODE) == O_RDWR) {
-		printf("Do not support O_RDWR.\n");
+		printf("Do not support read and write.\n");
 		return -1;
 	
 	// O_RDONLY
 	} else if ((flags & O_ACCMODE) == O_RDONLY) {
-		fcbArray[returnFd].readWriteFlags = O_RDONLY;
+		fcbArray[fd].readWriteFlags = O_RDONLY;
 	
 	// O_WRONLY
 	} else if ((flags & O_ACCMODE) == O_WRONLY) {
-		fcbArray[returnFd].readWriteFlags = O_WRONLY;
+		fcbArray[fd].readWriteFlags = O_WRONLY;
+		// Reset the fcb buffer if the file is not empty
+		if (fcbArray[fd].fileSize > 0) {
+			// Load the LBA block that the cursor is currently at to the buffer
+			// and update fcb mata data accordingly
+			fcbArray[fd].cursor = fcbArray[fd].fileSize;
+			fcbArray[fd].fileSize = fcbArray[fd].fileSize / MINBLOCKSIZE * MINBLOCKSIZE;
+			int cursorInDisk = fcbArray[fd].cursor / MINBLOCKSIZE;
+			LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
+			fcbArray[fd].index = fcbArray[fd].cursor - cursorInDisk * MINBLOCKSIZE;
+			fcbArray[fd].buflen = 1 * MINBLOCKSIZE;
+			fcbArray[fd].writeBufferNonEmpty = true;
+		}
 	} else {
-		fcbArray[returnFd].readWriteFlags = -1;	// -1 means not initialized
+		printf("Unrecognized access mode.\n");
+		return -1;
 	}
 
-	return (returnFd);
+	return (fd);
 }
 
 
@@ -208,7 +220,7 @@ int b_write (int fd, char * buffer, int count)
 		cursorInDisk = fcbArray[fd].cursor / MINBLOCKSIZE;
 
 		// number of bytes needed to fill the buffer
-		bytesNeededToFull = BUFSIZE - fcbArray[fd].index;
+		bytesNeededToFull = MINBLOCKSIZE - fcbArray[fd].index;
 		
 		// get the number of bytes going to be load to the buffer from caller's buffer
 		// it's min(count, bytesNeededToFull)
@@ -227,7 +239,7 @@ int b_write (int fd, char * buffer, int count)
 		fcbArray[fd].index += loadToBuffer;
 
 		// write bytes from buffer to the file ONLY when the buffer is full
-		if (fcbArray[fd].index == BUFSIZE) {
+		if (fcbArray[fd].index == MINBLOCKSIZE) {
 
 			// check if all allocated blocks have been used
 			// if yes, call free space manager to get 10 more blocks
@@ -322,12 +334,12 @@ int b_read (int fd, char * buffer, int count)
 		
 		// The following calculates how many 512 bytes chunks need to be copied to
 		// the callers buffer from the count of what is left to copy
-		numberOfBlocksToCopy = part3 / BUFSIZE;  //This is integer math
-		part2 = numberOfBlocksToCopy * BUFSIZE; 
+		numberOfBlocksToCopy = part3 / MINBLOCKSIZE;  //This is integer math
+		part2 = numberOfBlocksToCopy * MINBLOCKSIZE; 
 		
 		// Reduce part 3 by the number of bytes that can be copied in chunks
 		// Part 3 at this point must be less than the block size
-		part3 = part3 - part2; // This would be equivalent to part3 % BUFSIZE		
+		part3 = part3 - part2; // This would be equivalent to part3 % MINBLOCKSIZE		
 		}
 
 	if (part1 > 0)	// memcpy part 1
@@ -354,7 +366,7 @@ int b_read (int fd, char * buffer, int count)
 		// LBAread always returns 0, we will assume it succeeds
 		LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
 		bytesRead = MINBLOCKSIZE * 1;
-		
+
 		// update
 		fcbArray[fd].index = 0;
 		fcbArray[fd].buflen = bytesRead; 
@@ -417,7 +429,7 @@ int b_seek(int fd, off_t offset, int whence){
 	int cursorInDisk = fcbArray[fd].cursor / MINBLOCKSIZE;
 	LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
 	fcbArray[fd].index = fcbArray[fd].cursor - cursorInDisk * MINBLOCKSIZE;
-	fcbArray[fd].buflen = 1 * BUFSIZE;
+	fcbArray[fd].buflen = 1 * MINBLOCKSIZE;
 	
 	return offset;
 }
