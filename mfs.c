@@ -590,4 +590,4 @@ int fs_move(const char *src, const char* dest){
     dest_spdir = NULL;
     directory = NULL;
     return result;
-}
+}//Test for git
