@@ -26,6 +26,7 @@
 #include "mfs.h"
 #include <math.h>			// for ceil()
 #include <stdlib.h>
+#include "freeSpace.h"
 
 #define MAXFCBS 20
 #define BUFSIZE 512
@@ -198,9 +199,8 @@ int b_write (int fd, char * buffer, int count)
 			// check if all allocated blocks have been used
 			// if yes, call free space manager to get 10 more blocks
 			if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { 
-				// int res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
-				int res = 888; // fake
-				if (res == -1) {
+				u_int64_t res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
+				if (res == 0) {
 					printf("ERROR: Write failed");
 					return -1;
 				}
@@ -394,8 +394,7 @@ void b_close (int fd)
 		int fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
 		// check if all allocated blocks have been used
 		if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { // if all have been used
-			// int res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
-			int res = 999; // fake
+			u_int64_t res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
 			if (res == -1) {
 				printf("ERROR: Write failed");
 			}
