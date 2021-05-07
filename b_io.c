@@ -217,16 +217,10 @@ int b_write (int fd, char * buffer, int count)
 		// load bytes to buffer from caller's buffer
 		memcpy (fcbArray[fd].buf + fcbArray[fd].index, buffer + pointer, loadToBuffer);
 
-		// update pointer - skipping those we have loaded and pointing to the next byte to load
+		// update a few things
 		pointer += loadToBuffer;
-
-		// update total remaining bytes need to load
 		count -= loadToBuffer;
-
-		// update existing bytes in the buffer
 		fcbArray[fd].index += loadToBuffer;
-		
-		// update total bytes write from caller to the buffer
 		fcbArray[fd].bytesWrite += loadToBuffer;
 
 		// write bytes from buffer to the file ONLY when the buffer is full
@@ -247,6 +241,7 @@ int b_write (int fd, char * buffer, int count)
 				fcbArray[fd].fileBlocksAllocated += 10;	
 			}
 
+			printf("W: cursor in disk %d\n", cursorInDisk);
 			LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
 	
 			fcbArray[fd].index = 0;
@@ -341,8 +336,9 @@ int b_read (int fd, char * buffer, int count)
 		
 	if (part2 > 0) 	//blocks to copy direct to callers buffer
 		{
-		int cursorInDisk = floor(fcbArray[fd].bytesRead / MINBLOCKSIZE);
+		int cursorInDisk = ceil(fcbArray[fd].bytesRead / MINBLOCKSIZE);
 		// LBAread always returns 0, we will assume it succeeds
+		printf("R P2: cursor in disk %d\n", cursorInDisk);
 		LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + cursorInDisk); 
 		bytesRead = MINBLOCKSIZE * numberOfBlocksToCopy;
 		part2 = bytesRead;  //might be less if we hit the end of the file
@@ -350,9 +346,9 @@ int b_read (int fd, char * buffer, int count)
 		
 	if (part3 > 0)	//We need to refill our buffer to copy more bytes to user
 		{	
-		int cursorInDisk = floor(fcbArray[fd].bytesRead / MINBLOCKSIZE);
-		//Read 1 block into our buffer
-		// LBAread always returns 0, we will assume it succeeds
+		int cursorInDisk = ceil(fcbArray[fd].bytesRead / MINBLOCKSIZE);
+		//Read 1 block into our buffer. LBAread always returns 0, we will assume it succeeds
+		printf("R P3: cursor in disk %d\n", cursorInDisk);
 		LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
 		bytesRead = MINBLOCKSIZE * 1;
 		
