@@ -331,8 +331,7 @@ int cmd_cp (int argcnt, char *argvec[])
 			printf("Usage: cp srcfile [destfile]\n");
 			return (-1);
 		}
-	
-	
+
 	testfs_src_fd = b_open (src, O_RDONLY);
 	testfs_dest_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);
 	do 
@@ -708,7 +707,7 @@ int main (int argc, char * argv[])
 	char * filename = "VolumeZero";
 	uint64_t volumeSize = 10000000;
 	uint64_t blockSize = BLOCKSIZE;
-  int retVal;
+  	int retVal;
 		
 	retVal = startPartitionSystem (filename, &volumeSize, &blockSize);	
 	printf("Opened %s, Volume Size: %llu;  BlockSize: %llu; Return %d\n", filename, (ull_t)volumeSize, (ull_t)blockSize, retVal);
@@ -717,7 +716,7 @@ int main (int argc, char * argv[])
 	
 	using_history();
 	stifle_history(200);	//max history entries
-	
+
 	while (1)
 		{
 		cmdin = readline("Prompt > ");
