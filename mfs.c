@@ -7,8 +7,7 @@
 * GitHub Repository Link: https://github.com/KenOasis/CSC415-GroupProject-FileSystem.git
 * File: mfs.c
 * Description:
-*   This is the implementation of mfs.h for the file
-* system interface 
+*   This is the implementation of mfs.h for the filesystem interface 
 **************************************************************************************/
 
 #include <string.h>
