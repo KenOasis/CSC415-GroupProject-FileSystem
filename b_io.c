@@ -1,17 +1,22 @@
-/**************************************************************
-* Class:  CSC-415-0# Spring 2021
-* Name: Zhuozhuo Liu
-* Student ID: 921410045
-* GitHub UserID: liuzz10
-* Project: Assignment 5 – Buffered I/O
+/***************************************************************************************
+* Class: CSC-415-02 Spring 2021
+* Names: Zhuozhuo Liu, Jinjian Tan, Yunhao Wang (Mike on iLearn), Chu Cheng Situ
+* Student ID: 921410045 (Zhuozhuo), 921383408 (Jinjian), 921458509 (Yunhao), 921409278 (Chu Cheng)
+* GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu (Chu Cheng)
+* Group Name: return 0
+* Project: Group Project – File System
 *
 * File: b_io.c
 *
-* Description: Buffered io module - Now with b_write. 
-*				This file include 3 main function - b_open, b_read, and b_write
-*				- that are used to read data and write by the main file.
+* Description: This file include 5 main functions that will be called by shell:
+*			   b_open, b_read, b_write, b_seek, b_close
+*			   b_open: opens a file and initialize fcb
+*              b_read: read bytes from a file to caller's buffer
+*			   b_write: write bytes from caller's buffer to a file
+*			   b_seek: look for a certain position from where to write or read
+*			   b_close: close the file
 *
-**************************************************************/
+*****************************************************************************************/
 
 #include <stdio.h>
 #include <unistd.h>
