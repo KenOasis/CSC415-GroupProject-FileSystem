@@ -172,7 +172,7 @@ void free_split_dir(splitDIR *spdir);
 
 
 
-char *get_absolute_path(char* cwd, char* argv);
+char *get_absolute_path(char* argv);
 
 int is_File(char *fullpath);
 int is_Dir(char *fullpath);

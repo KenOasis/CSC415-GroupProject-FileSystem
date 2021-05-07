@@ -108,19 +108,17 @@ uint64_t fs_init(/*freeSpace * vector*/){
 ****************************************************/
 int fs_mkdir(const char *pathname, mode_t mode){
     int success_status = 1;
-    char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
-    char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    char *abslpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     // construct the full path of the given dir name
-    strcpy(fullpath, cwd);
-    fullpath = strcat(fullpath,"/");
-    fullpath = strcat(fullpath, pathname);
+    strcpy(abslpath, pathname);
+    abslpath = get_absolute_path(abslpath);
     //reload directory for LBA and get the pos of next
     //direcotry entry
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
     reload_directory(directory);
     uint32_t free_dir_ent = find_free_dir_ent(directory);
-    splitDIR *spdir = split_dir(fullpath);
+    splitDIR *spdir = split_dir(abslpath);
     char *new_dir_name = malloc(sizeof(char)*256);
     strcpy(new_dir_name, *(spdir->dir_names + spdir->length - 1));
     spdir->length--; // move up 1 level to cwd
@@ -145,15 +143,13 @@ int fs_mkdir(const char *pathname, mode_t mode){
             success_status = 0;
         }
     }else{
-        printf("mkdir: %s: No such file or directory\n", pathname);
+        printf("mkdir: %s: cannot make new directory\n", new_dir_name);
     }
-    free(fullpath);
+    free(abslpath);
     free_split_dir(spdir);
     free_directory(directory);
     free(new_dir_name);
-    free(cwd);
-    cwd = NULL;
-    fullpath = NULL;
+    abslpath = NULL;
     new_dir_name = NULL;
     directory = NULL;
     spdir = NULL;
@@ -170,22 +166,18 @@ int fs_mkdir(const char *pathname, mode_t mode){
 ****************************************************/
 int fs_rmdir(const char *pathname){
     int success_rmdir = 0;
-    char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
-    char *dirname = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    char *abslpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     char *filename = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    //construct the fullpath of the give dir name
+    //construct the absolute path of the give dir name
     strcpy(filename, pathname);
-    strcpy(fullpath, cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, filename);
     // reload directory for LBA
+    abslpath = get_absolute_path(filename);
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
     reload_directory(directory);
     //check whether the give name is the Dir type
-    int is_dir = fs_isDir(filename);
-    splitDIR *spdir = split_dir(fullpath);
+    int is_dir = is_Dir(abslpath);
+    splitDIR *spdir = split_dir(abslpath);
     if(is_dir == 1){
         // find the directory entry position and check wheher it is empty
         uint32_t de_pos = find_DE_pos(spdir);
@@ -214,13 +206,12 @@ int fs_rmdir(const char *pathname){
     }else{
         printf("rmdir: %s: No such file or directory\n", *(spdir->dir_names + spdir->length - 1));
     }
-    free(fullpath);
+    free(abslpath);
     free_split_dir(spdir);
     free_directory(directory);
-    free(cwd);
-    cwd = NULL;
-    dirname = NULL;
-    fullpath = NULL;
+    free(filename);
+    filename = NULL;
+    abslpath = NULL;
     directory = NULL;
     spdir = NULL;
    return success_rmdir;
@@ -365,22 +356,15 @@ char * fs_getcwd(char *buf, size_t size){
 ****************************************************/
 int fs_setcwd(char *buf){
     int is_success = 1;
-    char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-    char *cwd_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     char *abslpath = NULL;
-    strcpy(cwd_buf, cwd);
-    abslpath = get_absolute_path(cwd_buf, buf);
+    abslpath = get_absolute_path(buf);
     // printf("absolute path is %s\n", abslpath);
     if((abslpath != NULL) && is_Dir(abslpath)){
         is_success = 0;
         strcpy(fs_DIR.cwd, abslpath);
         // printf("Change cwd to %s\n", fs_DIR.cwd);
     }
-    free(cwd);
-    free(cwd_buf);
     free(abslpath);
-    cwd = NULL;
-    cwd_buf = NULL;
     abslpath = NULL;
     return is_success;
     
@@ -396,15 +380,11 @@ int fs_setcwd(char *buf){
 * name is the type File or not
 ****************************************************/
 int fs_isFile(char * path){
-    char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    strcpy(fullpath, cwd);
-    fullpath = strcat(fullpath,"/");
-    fullpath = strcat(fullpath, path);
+    strcpy(fullpath, path);
+    fullpath = get_absolute_path(fullpath);
     int is_file = is_File(fullpath);
     free(fullpath);
-    free(cwd);
-    cwd = NULL;
     fullpath = NULL;
     return is_file;
  }//return 1 if file, 0 otherwise
@@ -419,16 +399,11 @@ int fs_isFile(char * path){
 * name is the type Dir or not
 ****************************************************/
 int fs_isDir(char * path){
-    char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
     char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    strcpy(fullpath, cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, path);
-
+    strcpy(fullpath, path);
+    fullpath = get_absolute_path(fullpath);
     int is_dir = is_Dir(fullpath);
     free(fullpath);
-    free(cwd);
-    cwd = NULL;
     fullpath = NULL;
     return is_dir;
 }		//return 1 if directory, 0 otherwise
@@ -447,15 +422,15 @@ int fs_delete(char* filename){
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
-    char *cwd = fs_getcwd(NULL,(DIR_MAXLENGTH + 1));
-    char *fullpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    strcpy(fullpath, cwd);
-    if(strcmp(fullpath, "root/") != 0)
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath, filename);
-    int is_File = fs_isFile(filename);
-    splitDIR *spdir = split_dir(fullpath);
-    if(is_File == 1){
+    char *abslpath = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    strcpy(abslpath, filename);
+    printf("run\n");
+    abslpath = get_absolute_path(abslpath);
+    int is_file = is_File(abslpath);
+    splitDIR *spdir = split_dir(abslpath);
+    printf("ablpath is %s\n", abslpath);
+    printf("is File %d\n", is_file);
+    if(is_file == 1){
         uint32_t de_pos = find_DE_pos(spdir);
         fs_de *de = (directory->d_dir_ents + de_pos);
         uint32_t inode_pos = de->de_inode;
@@ -477,8 +452,7 @@ int fs_delete(char* filename){
         success_delete = 0;
     }
     free_directory(directory);
-    free(cwd);
-    free(fullpath);
+    free(abslpath);
     free_split_dir(spdir);
     return success_delete;
 }	//removes a file
@@ -497,12 +471,9 @@ int fs_stat(const char *path, struct fs_stat *buf){
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
     reload_directory(directory);
-    char *cwd_buf= malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
     char *argv_buf = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
-    char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-    strcpy(cwd_buf, cwd);
     strcpy(argv_buf, path);
-    char *abslpath = get_absolute_path(cwd_buf,argv_buf);
+    char *abslpath = get_absolute_path(argv_buf);
     splitDIR *spdir = split_dir(abslpath);
     uint32_t de_pos = find_DE_pos(spdir);
     uint32_t inode_pos =(directory->d_dir_ents + de_pos)->de_inode;
@@ -515,13 +486,9 @@ int fs_stat(const char *path, struct fs_stat *buf){
     buf->st_createtime = inode->fs_createtime;
     buf->st_accessmode = inode->fs_accessmode;
     free_directory(directory);
-    free(cwd);
-    free(cwd_buf);
     free(argv_buf);
     free(abslpath);
     free_split_dir(spdir);
-    cwd = NULL;
-    cwd_buf = NULL;
     argv_buf = NULL;
     abslpath = NULL;
     spdir = NULL;
@@ -532,16 +499,12 @@ int fs_stat(const char *path, struct fs_stat *buf){
 
 int fs_move(const char *src, const char* dest){
     int result = 0;
-    char* cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-    char* cwd_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
     char* src_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-
     char* dest_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
-    strcpy(cwd_buf, cwd);
     strcpy(src_buf, src);
     strcpy(dest_buf, dest);
-    char* src_abslpath = get_absolute_path(cwd_buf, src_buf);
-    char* dest_abslpath = get_absolute_path(cwd_buf, dest_buf);
+    char* src_abslpath = get_absolute_path(src_buf);
+    char* dest_abslpath = get_absolute_path(dest_buf);
     splitDIR *src_spdir = split_dir(src_abslpath);
     splitDIR *dest_spdir = split_dir(dest_abslpath);
     fs_directory* directory = malloc(MINBLOCKSIZE);
@@ -571,8 +534,6 @@ int fs_move(const char *src, const char* dest){
             write_directory(directory);
         }
     } 
-    free(cwd);
-    free(cwd_buf);
     free(src_buf);
     free(dest_buf);
     free(src_abslpath);
@@ -580,8 +541,6 @@ int fs_move(const char *src, const char* dest){
     free_split_dir(src_spdir);
     free_split_dir(dest_spdir);
     free_directory(directory);
-    cwd = NULL;
-    cwd_buf = NULL;
     src_buf = NULL;
     dest_buf = NULL;
     src_abslpath = NULL;

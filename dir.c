@@ -256,8 +256,10 @@ void free_split_dir(splitDIR *spdir){
 * on the given cwd to the absoluted path from the root
 ****************************************************/
 
-char *get_absolute_path(char* cwd, char* argv){
+char *get_absolute_path(char* argv){
     char* absolute_path = NULL;
+    char *cwd_buf = malloc(sizeof(char) * (DIR_MAXLENGTH + 1));
+    strcpy(cwd_buf, fs_DIR.cwd);
     splitDIR *cwd_spdir = NULL;
     splitDIR *argv_spdir = split_dir(argv);
     if(argv[0] == '/'){
@@ -265,7 +267,7 @@ char *get_absolute_path(char* cwd, char* argv){
         // change to the root directory
         cwd_spdir = split_dir("root/");
     }else{
-        cwd_spdir= split_dir(cwd);
+        cwd_spdir= split_dir(cwd_buf);
     }
     
     int stack_capacity = cwd_spdir->length + argv_spdir->length + 1;
@@ -305,9 +307,11 @@ char *get_absolute_path(char* cwd, char* argv){
             absolute_path[strlen(absolute_path) - 1] = 0;
         }
     }
+    free(cwd_buf);
     free_split_dir(cwd_spdir);
     free_split_dir(argv_spdir);
     free_stack(stack);
+    cwd_buf = NULL;
     cwd_spdir = NULL;
     argv_spdir = NULL;
     stack = NULL;
