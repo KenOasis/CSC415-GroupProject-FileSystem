@@ -24,7 +24,6 @@
 #include <stdbool.h>		// for write buffer indicator
 #include "fsLow.h"  		// import MINBLOCKSIZE 512
 #include "mfs.h"
-#include <math.h>			// for ceil()
 #include <stdlib.h>
 #include "freeSpace.h"
 
@@ -166,7 +165,7 @@ int b_write (int fd, char * buffer, int count)
 	pointer = 0;
 	
 	// Convert fileSize to how many blocks the file is taking (this is not the total blocks allocated)
-	fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
+	fileUsedBlocks = fcbArray[fd].fileSize / MINBLOCKSIZE;
 
 	// Writing to the file from caller's buffer until reaching the end
 	while (count > 0) {
@@ -391,7 +390,7 @@ void b_close (int fd)
 	if (fcbArray[fd].writeBufferNonEmpty) {
 
 		// Convert fileSize to how many blocks the file is taking
-		int fileUsedBlocks = ceil(fcbArray[fd].fileSize / 512);
+		int fileUsedBlocks = fcbArray[fd].fileSize / MINBLOCKSIZE;
 		// check if all allocated blocks have been used
 		if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { // if all have been used
 			u_int64_t res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
