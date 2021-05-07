@@ -24,6 +24,7 @@ uint32_t find_free_dir_ent(fs_directory* directory){
          * remember to chage the directory info and write back to LBA
          */
         
+        
         return free_dir_ent;
     }
     return free_dir_ent;
@@ -353,8 +354,8 @@ uint64_t getFileLBA(const char *filename, int flags){
             // file_inode->fs_blocks = 10
             // file_inode->fs_addres = ? (new LBA)
                 file_inode->fs_address = expandFreeSection(file_inode->fs_address, file_inode->fs_blocks, 10);
-                printf("ADDRESS MOVED: %ld\n", file_inode->fs_address);
                 file_inode->fs_blocks = 10;
+                result = file_inode->fs_address;
             }else{
                 result = file_inode->fs_address;
                 // printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
@@ -377,7 +378,6 @@ uint64_t getFileLBA(const char *filename, int flags){
         //Allocated space (LBA) for file 
         // Test only
         new_inode->fs_address = findMultipleBlocks(10);
-        printf("ADDRESS ORIGINAL: %ld\n", new_inode->fs_address);
         //new_inode->fs_address = 888;
         new_inode->fs_size = 0;
         new_inode->fs_blocks = 10;

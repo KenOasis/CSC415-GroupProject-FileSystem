@@ -33,7 +33,8 @@ u_int64_t findMultipleBlocks(int blockCount) {
 	for (int n = 0; n < vector->size; n++) { 		//iterates through the ints in the bitvector
 		for (int a = 0; a < 32; a++) { 				//iterates through the bits in bitvector
 			if ((n * 32 + a + 1) > vector->blockCount) {	//reached end of the bitVector
-				printf("RAN OUT OF SPACE\n");
+				printf("ERROR: SYSTEM IS OUT OF SPACE\n");
+				exit(0);
 				return 0;
 			}
 			if ((vector->bitVector[n] & (1 << a)) == 0) {		//if vector bit is 0 aka free
@@ -67,6 +68,8 @@ u_int64_t findMultipleBlocks(int blockCount) {
 			}
 		}
 	}
+	printf("ERROR: SYSTEM IS OUT OF SPACE\n");
+	exit(0);
 	freeIndex = 0;
 	return freeIndex; 								//bits were not found, return 0 to indicate error
 }
