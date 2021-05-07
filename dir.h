@@ -170,25 +170,7 @@ splitDIR* split_dir(const char *name);
 ****************************************************/
 void free_split_dir(splitDIR *spdir);
 
-/****************************************************
-* @parameters 
-*   @type char*: the buf hold the path to assembly
-    @type int*: the offset from the head of path
-		@type int*: the offset from the tail of path
-* @return
-*   @type char*: the path of assembly result
-* This function is to assembly path as fs_setcwd needed
-* example:
-*			intput:
-			buf: /this/is/a/path/of/test
-			head_offset: -1
-			tail_offset: -1
-			output:
-		  /is/a/path/of
-			it cut the 1st level from the head : /this
-			, and the 1st level from the tail: /of  
-****************************************************/
-char *assemble_path(char *buf, int head_offset, int tail_offset);
+
 
 char *get_absolute_path(char* cwd, char* argv);
 

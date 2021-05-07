@@ -257,16 +257,23 @@ fdDir * fs_opendir(const char *name){
     uint32_t parent_inode = dirp->de_pos;
     uint32_t count_children = 0;
     uint32_t current_parent_inode;
+    uint32_t parent_dotdot_inode = (directory->d_dir_ents + parent_inode)->de_dotdot_inode;
     for(int i = 1; i < directory->d_num_DEs; ++i){
         current_parent_inode = (directory->d_dir_ents + i)->de_dotdot_inode;
         if(current_parent_inode == parent_inode){
             count_children++;
         }
     }
-    dirp->num_children = count_children;
-    dirp->children = malloc(sizeof(struct fs_diriteminfo*) * count_children);
-
-    int pos = 0;
+    dirp->num_children = count_children + 2;
+    dirp->children = malloc(sizeof(struct fs_diriteminfo*) * (count_children + 2));
+    (*(dirp->children + 0)) = malloc(sizeof(struct fs_diriteminfo)); 
+    (*(dirp->children + 0))-> file_type = (directory->d_inodes + parent_inode)->fs_entry_type;
+    strcpy(((*(dirp->children + 0))-> d_name), ".");
+    //initialize ".."
+     (*(dirp->children + 1)) = malloc(sizeof(struct fs_diriteminfo)); 
+    (*(dirp->children + 1))-> file_type = (directory->d_inodes + parent_dotdot_inode)->fs_entry_type;
+    strcpy(((*(dirp->children + 1))-> d_name), "..");
+    int pos = 2;
     for(int i = 1; i < directory->d_num_DEs; ++i){
         fs_de *current_dir_ent = (directory->d_dir_ents + i);
         fs_inode *current_inode = (directory->d_inodes + i);
@@ -490,12 +497,13 @@ int fs_stat(const char *path, struct fs_stat *buf){
     fs_directory* directory = malloc(MINBLOCKSIZE);
     LBAread(directory, 1, fs_DIR.LBA_root_directory);
     reload_directory(directory);
-    char *fullpath= malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
+    char *cwd_buf= malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
+    char *argv_buf = malloc(sizeof(char)*(DIR_MAXLENGTH + 1));
     char *cwd = fs_getcwd(NULL, (DIR_MAXLENGTH + 1));
-    strcpy(fullpath, cwd);
-    fullpath = strcat(fullpath, "/");
-    fullpath = strcat(fullpath,path);
-    splitDIR *spdir = split_dir(fullpath);
+    strcpy(cwd_buf, cwd);
+    strcpy(argv_buf, path);
+    char *abslpath = get_absolute_path(cwd_buf,argv_buf);
+    splitDIR *spdir = split_dir(abslpath);
     uint32_t de_pos = find_DE_pos(spdir);
     uint32_t inode_pos =(directory->d_dir_ents + de_pos)->de_inode;
     fs_inode *inode = (directory->d_inodes + inode_pos);
@@ -507,14 +515,17 @@ int fs_stat(const char *path, struct fs_stat *buf){
     buf->st_createtime = inode->fs_createtime;
     buf->st_accessmode = inode->fs_accessmode;
     free_directory(directory);
-    free(fullpath);
-    free_split_dir(spdir);
     free(cwd);
-    fullpath = NULL;
-    spdir = NULL;
+    free(cwd_buf);
+    free(argv_buf);
+    free(abslpath);
+    free_split_dir(spdir);
     cwd = NULL;
+    cwd_buf = NULL;
+    argv_buf = NULL;
+    abslpath = NULL;
+    spdir = NULL;
     directory = NULL;
-    inode = NULL;
     return 0;
 }
 
