@@ -316,7 +316,7 @@ int is_Dir(char *fullpath){
 }
 uint64_t getFileLBA(const char *filename, int flags){
     //*check whether the dir is exist in the cwd
-    uint64_t result = 0;
+    uint64_t result = UINT_MAX;
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
@@ -516,7 +516,6 @@ int setFileBlocks(const char *filename, blkcnt_t count){
 int setFileLBA(const char *filename, uint64_t address){
     // Not check the whether the LBA is available or legal
     int result = 0;
-    printf("set file lba is %lu\n", address);
     fs_directory* directory = malloc(MINBLOCKSIZE);
 	LBAread(directory, 1, fs_DIR.LBA_root_directory);
 	reload_directory(directory);
