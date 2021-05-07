@@ -19,13 +19,52 @@ uint32_t find_free_dir_ent(fs_directory* directory){
         }
     }
     if(free_dir_ent == 0){
-        /**To-Do**
-         * extend more directory entries and more inodes, then get the new available space
-         * remember to chage the directory info and write back to LBA
-         */
-        
-        
-        return free_dir_ent;
+        fs_directory* directory = malloc(MINBLOCKSIZE);
+	    LBAread(directory, 1, fs_DIR.LBA_root_directory);
+	    reload_directory(directory);
+        blkcnt_t old_de_blocks = directory->d_de_blocks;
+        blkcnt_t old_inode_blocks = directory->d_inode_blocks;
+        uint32_t old_num_inodes = directory->d_num_inodes;
+        uint32_t old_num_DEs = directory->d_num_DEs;
+
+        //uint64_t new_de_start_location = expandFreeSection();
+        //uint64_t new_inode_start_location =  expandFreeSection();
+
+        directory->d_de_start_location = new_de_start_location;
+        directory->d_inode_start_location = new_inode_start_location;
+        directory->d_de_blocks = (old_de_blocks) * 2;
+        directory->d_inode_blocks = (old_inode_blocks) * 2;
+        directory->d_num_inodes = (old_num_inodes) * 2;
+        directory->d_num_DEs = (old_num_DEs) * 2;
+        free(directory->d_inodes);
+        free(directory->d_dir_ents);
+        // reload inodes and dir_ents from new location
+        reload_directory(directory);
+
+        //init new allocated inodes and dir_ents
+        fs_de *dir_ents = directory->d_dir_ents;
+        for(int i = old_num_DEs; i < directory->d_num_DEs; ++i){
+            strcpy((dir_ents + i)->de_name, "uninitialized");
+            (dir_ents + i)->de_dotdot_inode = UINT_MAX;
+            (dir_ents + i)->de_inode = i;
+        }
+        fs_inode *inodes = directory->d_inodes;
+        for(int i = old_num_inodes; i < directory->d_num_inodes; ++i){
+            (inodes + i)->fs_entry_type = DT_REG;
+            (inodes + i)->fs_size = sizeof(fs_de);
+            (inodes + i)->fs_blksize = 0;
+            (inodes + i)->fs_blocks = 0;
+            (inodes + i)->fs_accesstime = time(NULL);
+            (inodes + i)->fs_modtime = time(NULL);
+            (inodes + i)->fs_createtime = time(NULL);
+            (inodes + i)->fs_address = ULLONG_MAX;
+            (inodes + i)->fs_accessmode = 0777;
+        }
+        // the 1st new allocated dir_ents/inodes is the new one;
+        write_directory(directory);
+        free_directory(directory);
+        directory = NULL;
+        free_dir_ent = old_num_DEs; 
     }
     return free_dir_ent;
 }

@@ -64,7 +64,7 @@ u_int64_t findMultipleBlocks(int blockCount) {
 					}
 				}
 				LBAwrite(vector->bitVector, vector->blocksNeeded, vector->LBABitVector); //write the updates to bit vector to LBA
-				printf("ADDRESS RETURNED: %d\n", freeIndex);
+				// printf("ADDRESS RETURNED: %d\n", freeIndex);
 				return freeIndex;
 			}
 		}
