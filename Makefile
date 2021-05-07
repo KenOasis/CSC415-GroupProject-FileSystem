@@ -52,7 +52,7 @@ $(ROOTNAME)$(HW)$(FOPTION): $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) -lm -l readline -l $(LIBS)
 
 clean:
-	rm *.o $(ROOTNAME)$(HW)$(FOPTION)
+	rm -rf *.o $(ROOTNAME)$(HW)$(FOPTION) VolumeZero
 
 run: $(ROOTNAME)$(HW)$(FOPTION)
 	./$(ROOTNAME)$(HW)$(FOPTION) $(RUNOPTIONS)
