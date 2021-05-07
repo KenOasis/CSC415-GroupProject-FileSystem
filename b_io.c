@@ -373,25 +373,52 @@ int b_read (int fd, char * buffer, int count)
 	return (bytesReturned);	
 	}
 
-// Interface to seek a specific position in file. We will move the cursor accordingly
+// Interface to seek a specific position in file, we will move the cursor accordingly
 int b_seek(int fd, off_t offset, int whence){
 	switch (whence)
 	{
-	/* Set the offset to 0 where the file begin 
-	   And to move the positions from the beginning of the file. */
+	// Set the cursor equal to the offset
 	case SEEK_SET:
-		offset = 0;
-		fd += offset;
+		// Error check: offset out of the range
+		if (offset > fcbArray[fd].fileSize) {
+			printf("ERROR: offset is invalid.\n");
+			return -1;
+		}
+		fcbArray[fd].cursor = offset;
 		break;
-	// To add the current position based on offset and write to disk.
+	
+	// Set the cursor offset-bytes away from the current position
 	case SEEK_CUR:
-		offset += fd;		
+		// Error check: offset out of the range
+		if (fcbArray[fd].cursor + offset > fcbArray[fd].fileSize) {
+			printf("ERROR: offset is invalid.\n");
+			return -1;
+		}
+		fcbArray[fd].cursor += offset;	
 		break;
-	// To move the positions from the end of the file and write to disk.
+	
+	// Set the cursor offset-bytes away from the end of the file
 	case SEEK_END:
-		offset += fd;
+		// Error check: offset out of the range
+		if (fcbArray[fd].fileSize + offset > fcbArray[fd].fileSize) {
+			printf("ERROR: offset is invalid.\n");
+			return -1;
+		}
+		fcbArray[fd].cursor = fcbArray[fd].fileSize + offset;
 		break;
 	}
+
+	// If there's remaining bytes in write buffer, write to LBA
+	if (fcbArray[fd].readWriteFlags == O_WRONLY) {
+		copy_last_write_buffer(fd);
+	}
+
+	// Load the block that the cursor is currently at from LBA to the buffer
+	int cursorInDisk = fcbArray[fd].cursor / MINBLOCKSIZE;
+	LBAread (fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
+	fcbArray[fd].index = fcbArray[fd].cursor - cursorInDisk * MINBLOCKSIZE;
+	fcbArray[fd].buflen = 1 * BUFSIZE;
+	
 	return offset;
 }
 
