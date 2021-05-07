@@ -285,7 +285,7 @@ fdDir * fs_opendir(const char *name){
             pos++;
         }
         current_dir_ent = NULL;
-        if(pos == count_children){
+        if(pos == (dirp->num_children)){
             break;
         }
     }
