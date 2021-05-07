@@ -1,3 +1,21 @@
+/**************************************************************
+Class:  CSC-415-02 Spring 2021
+* Names: Zhuozhuo Liu, Jinjian Tan, Yunhao Wang (Mike on iLearn), Chu Cheng Situ
+* Student ID: 921410045 (Zhuozhuo), 921383408 (Jinjian), 921458509 (Yunhao), 921409278 
+* (Chu Cheng)
+* GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu 
+* (Chu Cheng)
+* Group Name: return 0
+* Project: Term Project – File System
+*
+* File: freeSpace.h
+*
+* Description: the header file containing all necessary functions
+* of the free space, including the ability to find free blocks
+* free some blocks, and expand an existing file
+*              
+*
+**************************************************************/
 #ifndef _FREESPACE_H
 #define _FREESPACE_H
 
@@ -6,10 +24,10 @@
 #include "fsLow.h"
 
 typedef struct  {
-	int* bitVector;
-	int size;
+	int* bitVector; //int bit vector that is the free space
+	int size; //the amount of ints in the bit vector
 	uint64_t LBABitVector; //LBA location of bit vector
-	int blocksNeeded;
+	int blocksNeeded; //blocks needed by the bit vector
 	int structSize;
 	int blockCount; //amount of blocks vector is accounting for
 } freeSpace;
