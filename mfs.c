@@ -29,9 +29,9 @@ uint64_t fs_init(/*freeSpace * vector*/){
     fs_inode *inodes = malloc(blockCountInode * MINBLOCKSIZE);
 
     fs_de *dir_ents = malloc(blockCountDE * MINBLOCKSIZE);
-
+    printf("block count: %d\n", blockCountInode);
     uint64_t LBA_inodes = findMultipleBlocks(blockCountInode);
-    //printf("LBA_INODE: %ld\n", LBA_inodes);
+    printf("LBA_INODE: %ld\n", LBA_inodes);
     //uint64_t LBA_inodes = 128; // temperary for test
     //Initialize inodes
     for(int i = 0; i < actualNumInode; ++i){

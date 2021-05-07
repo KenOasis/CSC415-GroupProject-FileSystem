@@ -23,6 +23,7 @@ uint32_t find_free_dir_ent(fs_directory* directory){
          * extend more directory entries and more inodes, then get the new available space
          * remember to chage the directory info and write back to LBA
          */
+        
         return free_dir_ent;
     }
     return free_dir_ent;
@@ -344,14 +345,16 @@ uint64_t getFileLBA(const char *filename, int flags){
             // ** To-do free the old LBA space
             // file_inode->fs_address
             // file_inode->fs_blocks
+            
                 file_inode->fs_blocks = 0;
                 file_inode->fs_size = 0;
             // ** To-do get new allocate space for write
             // 10 blocks as initial ? set them to
             // file_inode->fs_blocks = 10
             // file_inode->fs_addres = ? (new LBA)
-                result = 666;
-                file_inode->fs_address = result;
+                file_inode->fs_address = expandFreeSection(file_inode->fs_address, file_inode->fs_blocks, 10);
+                printf("ADDRESS MOVED: %ld\n", file_inode->fs_address);
+                file_inode->fs_blocks = 10;
             }else{
                 result = file_inode->fs_address;
                 // printf("filesize for %s is %lld\n", filename, file_inode->fs_size);
@@ -373,7 +376,9 @@ uint64_t getFileLBA(const char *filename, int flags){
         strcpy(new_de->de_name, filename);
         //Allocated space (LBA) for file 
         // Test only
-        new_inode->fs_address = 888;
+        new_inode->fs_address = findMultipleBlocks(10);
+        printf("ADDRESS ORIGINAL: %ld\n", new_inode->fs_address);
+        //new_inode->fs_address = 888;
         new_inode->fs_size = 0;
         new_inode->fs_blocks = 10;
         new_inode->fs_blksize = MINBLOCKSIZE;

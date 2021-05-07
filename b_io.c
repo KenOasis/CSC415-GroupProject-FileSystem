@@ -395,7 +395,7 @@ void b_close (int fd)
 		// check if all allocated blocks have been used
 		if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { // if all have been used
 			u_int64_t res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
-			if (res == -1) {
+			if (res == 0) {
 				printf("ERROR: Write failed");
 			}
 			// Update LBA and blocks allocated in fcb
