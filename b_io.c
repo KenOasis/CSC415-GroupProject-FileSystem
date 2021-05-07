@@ -41,7 +41,6 @@ typedef struct b_fcb
 	int index;		//holds the current position in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
 	bool writeBufferNonEmpty;	// track if we need to flush write buffer
-	int cursorInDisk;	// the cursor that tracks which block we are on disk
 	int bytesRead;	// the cursor that tracks # bytes read (in case it's reaching EOF)
 	off_t fileSize;	// the current size of the file
 	blkcnt_t fileBlocksAllocated;	// total number of the blocks that the file allocated
@@ -106,7 +105,6 @@ int b_open (char * filename, int flags)
 	fcbArray[returnFd].buflen = 0; 			// have not read anything yet
 	fcbArray[returnFd].index = 0;			// have not read anything yet
 	fcbArray[returnFd].writeBufferNonEmpty = false;	// track if we need to flush write buffer
-	fcbArray[returnFd].cursorInDisk = 0;	// the cursor that tracks which block we are on disk
 	fcbArray[returnFd].bytesRead = 0;
 
 	// Get file meta data from directory
@@ -243,6 +241,7 @@ int b_read (int fd, char * buffer, int count)
 	int numberOfBlocksToCopy;	// holds the number of whole blocks that are needed
 	int remainingBytesInMyBuffer;	// holds how many bytes are left in my buffer	
 	int remainingBytesToRead;	// = file size - bytesRead
+	int cursorInDisk;			// Which block we are reading from disk
 
 	if (startup == 0) b_init();  //Initialize our system
 
@@ -307,7 +306,7 @@ int b_read (int fd, char * buffer, int count)
 		
 	if (part2 > 0) 	//blocks to copy direct to callers buffer
 		{
-		int cursorInDisk = fcbArray[fd].bytesRead / MINBLOCKSIZE;
+		cursorInDisk = fcbArray[fd].bytesRead / MINBLOCKSIZE;
 		// LBAread always returns 0, we will assume it succeeds
 		LBAread (buffer+part1, numberOfBlocksToCopy, fcbArray[fd].startingLBA + cursorInDisk); 
 		bytesRead = MINBLOCKSIZE * numberOfBlocksToCopy;
@@ -341,8 +340,7 @@ int b_read (int fd, char * buffer, int count)
 	return (bytesReturned);	
 	}
 
-// Interface to seek a specific position in file
-// We will move the cursorInDisk accordingly
+// Interface to seek a specific position in file. We will move the cursor accordingly
 int b_seek(int fd, off_t offset, int whence){
 	switch (whence)
 	{
@@ -355,15 +353,12 @@ int b_seek(int fd, off_t offset, int whence){
 	// To add the current position based on offset and write to disk.
 	case SEEK_CUR:
 		offset += fd;		
-		LBAwrite(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);	
 		break;
 	// To move the positions from the end of the file and write to disk.
 	case SEEK_END:
 		offset += fd;
-		LBAwrite(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);
 		break;
 	}
-	LBAread(fcbArray[fd].buf, fd, fcbArray[fd].cursorInDisk);
 	return offset;
 }
 
@@ -373,11 +368,10 @@ void b_close (int fd)
 	// Add the end of the file remained in the write buffer
 	// When the indicator is true, we know that there are some remaining to write
 	if (fcbArray[fd].writeBufferNonEmpty) {
-
-		// Convert fileSize to how many blocks the file is taking
-		int fileUsedBlocks = fcbArray[fd].fileSize / MINBLOCKSIZE;
+		// Get the block that we are writing in disk
+		int cursorInDisk = fcbArray[fd].bytesRead / MINBLOCKSIZE;
 		// check if all allocated blocks have been used
-		if (fileUsedBlocks == fcbArray[fd].fileBlocksAllocated) { // if all have been used
+		if (cursorInDisk == fcbArray[fd].fileBlocksAllocated) { // if all have been used
 			u_int64_t res = expandFreeSection(fcbArray[fd].startingLBA, fcbArray[fd].fileBlocksAllocated, fcbArray[fd].fileBlocksAllocated + GETMOREBLOCKS);
 			if (res == 0) {
 				printf("ERROR: Write failed");
@@ -387,7 +381,7 @@ void b_close (int fd)
 			fcbArray[fd].fileBlocksAllocated += 10;	
 		}
 
-		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + fileUsedBlocks);
+		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].startingLBA + cursorInDisk);
 
 		// update
 		fcbArray[fd].fileSize += fcbArray[fd].buflen;
@@ -401,7 +395,6 @@ void b_close (int fd)
 	// reset fcb values
 	fcbArray[fd].buflen = 0;
 	fcbArray[fd].index = 0;
-	fcbArray[fd].cursorInDisk = -1;
 	fcbArray[fd].fileBlocksAllocated = 0;
 	fcbArray[fd].fileSize = 0;
 	fcbArray[fd].bytesRead = 0;
