@@ -1,8 +1,10 @@
-/**************************************************************
-* Class:  CSC-415
-* Name: Professor Bierman
-* Student ID: N/A
-* Project: Basic File System
+/***************************************************************************************
+* Class: CSC-415-02 Spring 2021
+* Names: Professor Bierman, Zhuozhuo Liu, Jinjian Tan, Yunhao Wang (Mike on iLearn), Chu Cheng Situ
+* Student ID: 921410045 (Zhuozhuo), 921383408 (Jinjian), 921458509 (Yunhao), 921409278 (Chu Cheng)
+* GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu (Chu Cheng)
+* Group Name: return 0
+* Project: Group Project – File System
 *
 * File: fsShell.c
 *
@@ -11,7 +13,7 @@
 * Make sure to set the #defined on the CMDxxxx_ON from 0 to 1 
 * when you are ready to test that feature
 *
-**************************************************************/
+*****************************************************************************************/
 
 
 #include <stdlib.h>

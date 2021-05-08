@@ -1,7 +1,21 @@
+/*****************************************************************************
+* Class: CSC-415-02 Spring 2021
+* Names: Zhuozhuo Liu, Jinjian Tan, Yunhao Wang (Mike on iLearn), Chu Cheng Situ
+* Student ID: 921410045 (Zhuozhuo), 921383408 (Jinjian), 921458509 (Yunhao), 921409278 (Chu Cheng)
+* GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu (Chu Cheng)
+* Group Name: return 0
+* Project: Group Project – File System
+*
+* File: vcb.c
+*
+* Description: 
+*    This file allocates the file system's volume and gets information from the free space and directory.              
+*
+******************************************************************************/
 
 #include "vcb.h"
 #include "freeSpace.h"
-extern freeSpace* vector;
+extern freeSpace* vector; 
 int initializeVCB(uint64_t volumesize, uint64_t blocksize) {
     int number_of_blocks = (volumesize + blocksize - 1) / blocksize;
     vcb *v0 = malloc(blocksize*2);

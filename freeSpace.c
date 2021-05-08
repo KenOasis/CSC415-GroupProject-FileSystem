@@ -1,3 +1,21 @@
+/**************************************************************
+Class:  CSC-415-02 Spring 2021
+* Names: Zhuozhuo Liu, Jinjian Tan, Yunhao Wang (Mike on iLearn), Chu Cheng Situ
+* Student ID: 921410045 (Zhuozhuo), 921383408 (Jinjian), 921458509 (Yunhao), 921409278 
+* (Chu Cheng)
+* GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu 
+* (Chu Cheng)
+* Group Name: return 0
+* Project: Group Project – File System
+*
+* File: freeSpace.c
+*
+* Description: the c file containing code for free space manipulation
+* as described in freeSpace.h
+*              
+*
+**************************************************************/
+
 #include "freeSpace.h"
 extern freeSpace* vector;
 
