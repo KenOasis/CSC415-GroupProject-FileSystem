@@ -338,7 +338,7 @@ int cmd_cp (int argcnt, char *argvec[])
 	testfs_dest_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);
 
 	//Handling b_open returned -1 as open fail
-	if((testfs_fd == -1) | testfs_dest_fd == -1){
+	if((testfs_src_fd == -1) | testfs_dest_fd == -1){
 		printf("cp2fs: fail to finish copying process due to file opening problem\n");
 		return (-1);
 	}

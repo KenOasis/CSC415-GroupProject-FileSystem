@@ -39,7 +39,7 @@ freeSpace* init_freeSpace(int totalBlocks, int BytesPerBlock) {
 		flag = flag << n;
 		vector->bitVector[0] |= flag;
 	}
-	//printf("BEFORE LBAWRITE: %d\n", vector->size);
+
 	LBAwrite(vector, 1, 2);
 	LBAwrite(vector->bitVector, vector->blocksNeeded, vector->LBABitVector);
 	return vector;
@@ -59,7 +59,6 @@ u_int64_t findMultipleBlocks(int blockCount) {
 				if (consecutiveFree == 0) {					//checks if this is the first free bit found, or following free bits
 					freeIndex = n * 32 + a;
 					consecutiveFree += 1;
-					//printf("FREE BLOCKS werE FOUND\n");
 				} else {
 					consecutiveFree += 1;
 				}
@@ -82,7 +81,6 @@ u_int64_t findMultipleBlocks(int blockCount) {
 					}
 				}
 				LBAwrite(vector->bitVector, vector->blocksNeeded, vector->LBABitVector); //write the updates to bit vector to LBA
-				// printf("ADDRESS RETURNED: %d\n", freeIndex);
 				return freeIndex;
 			}
 		}
