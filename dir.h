@@ -8,8 +8,7 @@
 * File: dir.h
 * Description:
 *   Declaring the internal helper function for implementing the file system(under_score_names), and some 
-* interface for b_io.c for accessing the metadata
-* of the file(carmelNames)
+* interface for b_io.c for accessing the metadata of the file(carmelNames)
 **************************************************************************************/
 
 #ifndef _DIR_H

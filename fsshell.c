@@ -334,6 +334,13 @@ int cmd_cp (int argcnt, char *argvec[])
 
 	testfs_src_fd = b_open (src, O_RDONLY);
 	testfs_dest_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);
+
+	//Handling b_open returned -1 as open fail
+	if((testfs_fd == -1) | testfs_dest_fd == -1){
+		printf("cp2fs: fail to finish copying process due to file opening problem\n");
+		return (-1);
+	}
+	
 	do 
 		{
 		readcnt = b_read (testfs_src_fd, buf, BUFFERLEN);
@@ -444,6 +451,15 @@ int cmd_cp2l (int argcnt, char *argvec[])
 	
 	testfs_fd = b_open (src, O_RDONLY);
 	linux_fd = open (dest, O_WRONLY | O_CREAT | O_TRUNC);
+
+
+	//Handling b_open returned -1 as open fail
+	if(testfs_fd == -1){
+		printf("cp2fs: fail to finish copying process due to file opening problem\n");
+		return (-1);
+	}
+	
+
 	int count = 0;
 	do 
 		{
@@ -489,6 +505,13 @@ int cmd_cp2fs (int argcnt, char *argvec[])
 	
 	testfs_fd = b_open (dest, O_WRONLY | O_CREAT | O_TRUNC);
 	linux_fd = open (src, O_RDONLY);
+
+	//Handling b_open returned -1 as open fail
+	if(testfs_fd == -1){
+		printf("cp2fs: fail to finish copying process due to file opening problem\n");
+		return (-1);
+	}
+
 	do 
 		{
 		readcnt = read (linux_fd, buf, BUFFERLEN);

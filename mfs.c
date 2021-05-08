@@ -187,7 +187,7 @@ int fs_rmdir(const char *pathname){
             write_directory(directory);
             updateModTime(parent_pos);
         }else{
-            printf("%s is not a empty directory\n", de->de_name);
+            printf("rmdir: %s: is not a empty directory\n", de->de_name);
         }
         de = NULL;      
     }else{

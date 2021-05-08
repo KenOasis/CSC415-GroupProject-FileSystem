@@ -330,7 +330,6 @@ uint64_t getFileLBA(const char *filepath, int flags){
     if(is_duplicated){
         is_file = is_File(abslpath);
     }
-    // printf("%s is dup ?%d is file ? %d \n", abslpath, is_duplicated, is_file);
     if(is_duplicated){
         if(!is_file){
             printf("open: %s exist in system as directory\n", filename);
