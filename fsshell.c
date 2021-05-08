@@ -774,6 +774,10 @@ int main (int argc, char * argv[])
 		free (cmd);
 		cmd = NULL;
 		} // end while
+		free(vector->bitVector);
+		vector->bitVector = NULL;
+		free(vector);
+		vector = NULL;
 		free(v0);
 		v0 = NULL;
 		closePartitionSystem();
