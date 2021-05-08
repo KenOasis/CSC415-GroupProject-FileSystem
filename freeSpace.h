@@ -6,7 +6,7 @@ Class:  CSC-415-02 Spring 2021
 * GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu 
 * (Chu Cheng)
 * Group Name: return 0
-* Project: Term Project – File System
+* Project: Group Project – File System
 *
 * File: freeSpace.h
 *
@@ -31,9 +31,36 @@ typedef struct  {
 	int structSize;
 	int blockCount; //amount of blocks vector is accounting for
 } freeSpace;
-
-freeSpace* init_freeSpace(int totalBlocks, int bytesPerBlock); //initialize the free space if it doesn't exist
-u_int64_t findMultipleBlocks(int blockCount); //find free blocks and return the LBA
-void freeSomeBits(int startIndex, int count); //free a chunk of blocks
-u_int64_t expandFreeSection(int fileLocation, int fileBlockSize, int newBlockSize); //expand the file to new size, move file if current location can't be allocated
+/**
+* @parameters 
+*   @type int: totalBlocks, amount of blocks in the vcb
+*   @type int: bytesPerBlock, how many bytes are in each block for vcb
+*@return a pointer to the freeSpace struct that was initialized
+* This function initializes the free space struct and bit vector, if there is none in LBA
+**/
+freeSpace* init_freeSpace(int totalBlocks, int bytesPerBlock); 
+/**
+* @parameters 
+*   @type int: blockCount, amount of consecutive blocks to find that are free
+*@return the LBA address of the start of the chunk of free blocks requested
+* This function finds the requested amount of free blocks, and returns the address where they're located
+**/
+u_int64_t findMultipleBlocks(int blockCount);
+/**
+* @parameters 
+*   @type int: startIndex, the beginning of the chunk that needs to be freed
+*   @type int: count, amount of blocks to be freed
+* This function frees a chunk of blocks as requested by the caller
+**/
+void freeSomeBits(int startIndex, int count);
+/**
+* @parameters 
+*   @type int: fileLocation, the LBA of the file in question
+*   @type int: fileBlockSize, the current size of the file
+*   @type int: newBlockSize, the size of the file after it has been expanded
+*@return the LBA address of the new location that the file is at
+* This function expands the size of the file at the passed in LBA address. If there's not enough space,
+* the file's LBA address is moved to somewhere that has the chunk needed.
+**/
+u_int64_t expandFreeSection(int fileLocation, int fileBlockSize, int newBlockSize);
 #endif

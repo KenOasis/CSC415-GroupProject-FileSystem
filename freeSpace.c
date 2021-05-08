@@ -6,7 +6,7 @@ Class:  CSC-415-02 Spring 2021
 * GitHub Names: liuzz10 (Zhuozhuo), KenOasis (Jinjian), mikeyhwang (Yunhao), chuchengsitu 
 * (Chu Cheng)
 * Group Name: return 0
-* Project: Term Project – File System
+* Project: Group Project – File System
 *
 * File: freeSpace.c
 *
